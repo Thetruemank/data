@@ -912,11 +912,15 @@ namespace TsMap
             Logger.Instance.Info("Starting Calculating Path...");
             //CalculatePath(Prefabs[firstP], Prefabs[secondP]);
 
+            // CHANGE THIS
+            PointF startCoord = new PointF(-10109.01f, 45631.55f);
+            PointF endCoord = new PointF(-8042.469f, -44051.7f);
+
             TsPrefabItem firstPfItm = null;
             foreach (var i in Prefabs)
             {
-                var x = i.X - -10109.01;
-                var z = i.Z - 45631.55;
+                var x = i.X - startCoord.X;
+                var z = i.Z - startCoord.Y;
                 if ((x <= 1 && x >= -1) && (z <= 1 && z >= -1))
                 {
                     firstPfItm = i;
@@ -927,8 +931,8 @@ namespace TsMap
             TsPrefabItem secondPfItm = null;
             foreach (var i in Prefabs)
             {
-                var x = i.X - -8042.469;
-                var z = i.Z - -44051.7;
+                var x = i.X - endCoord.X;
+                var z = i.Z - endCoord.Y;
                 if ((x <= 10 && x >= -10) && (z <= 10 && z >= -10))
                 {
                     secondPfItm = i;
