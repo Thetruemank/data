@@ -45,10 +45,5 @@ namespace TsMap
             return false;
         }
 
-        public bool IsBidirectional() {
-            if (LanesLeft.Count > 0 && LanesRight.Count > 0) return true;
-            return false;
-        }
-
     }
 }

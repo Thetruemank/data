@@ -103,21 +103,12 @@ namespace TsMap
                             if (item.Valid) Mapper.MapOverlays.Add(item); break;
                         }
                     case TsItemType.Ferry:
-<<<<<<< HEAD
                         {
                             var item = new TsFerryItem(this, lastOffset);
                             lastOffset += item.BlockSize;
                             if (item.Valid) Mapper.FerryPortbyId.Add(item.FerryPortId, item);
                             if (item.Valid) Mapper.FerryConnections.Add(item); break;
                         }
-=======
-                    {
-                        var item = new TsFerryItem(this, lastOffset);
-                        lastOffset += item.BlockSize;
-                        if (item.Valid) Mapper.FerryPortbyId.Add(item.FerryPortId,item);
-                        if (item.Valid) Mapper.FerryConnections.Add(item); break;
-                    }
->>>>>>> d5c7e3d5c3abf745f5d0863649bf2f871f18fd36
                     case TsItemType.Garage:
                         {
                             var item = new TsGarageItem(this, lastOffset);

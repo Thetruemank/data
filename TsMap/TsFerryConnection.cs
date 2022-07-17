@@ -32,11 +32,7 @@ namespace TsMap
         public int Time;
         public int Distance;
 
-<<<<<<< HEAD
         public void AddConnectionPosition(int index, float x, float z)
-=======
-        public void AddConnectionPosition(float x, float z)
->>>>>>> d5c7e3d5c3abf745f5d0863649bf2f871f18fd36
         {
             if (Connections.Count > index) return;
             Connections.Add(new TsFerryPoint(x / 256, z / 256));
