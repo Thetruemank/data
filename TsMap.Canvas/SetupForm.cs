@@ -17,6 +17,7 @@ namespace TsMap.Canvas
         public SetupForm()
         {
             InitializeComponent();
+<<<<<<< HEAD
             AppSettings = JsonHelper.LoadSettings();
             GameFolderBrowserDialog.Description = "Please select the game directory\nE.g. D:/Games/steamapps/common/Euro Truck Simulator 2/";
             GameFolderBrowserDialog.ShowNewFolderButton = false;
@@ -53,6 +54,14 @@ namespace TsMap.Canvas
             _mods = files.Select(x => new Mod(x)).ToList();
             UpdateModList();
             if (gamePath != null) NextBtn.Enabled = true;
+=======
+            folderBrowserDialog1.Description = "Please select the game directory\nE.g. D:/Games/steamapps/common/Euro Truck Simulator 2/";
+            folderBrowserDialog1.ShowNewFolderButton = false;
+            // Being bored of putting always my game directory for testing
+            label1.Text = "Auto selected path (C:/Program Files (x86)/Steam/SteamApps/common/Euro Truck Simulator 2)";
+            folderBrowserDialog1.SelectedPath = "C:/Program Files (x86)/Steam/SteamApps/common/Euro Truck Simulator 2";
+            NextBtn.Enabled = true;
+>>>>>>> d5c7e3d5c3abf745f5d0863649bf2f871f18fd36
         }
 
         private void BrowseBtn_Click(object sender, EventArgs e)
