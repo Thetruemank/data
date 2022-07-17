@@ -1,21 +1,11 @@
-<<<<<<< HEAD
 # Euro Truck Simulator 2 / American Truck Simulator Map Renderer
 
 This Application reads ATS/ETS2 files to draw roads, prefabs, map overlays, ferry lines and city names. It can also generate a route between two prefabs. This is an updated fork of [edoaxyz/ts-map](https://github.com/edoaxyz/ts-map).
 
 To change the generated route you need to adjust the coordinates in TsMapper.cs line 916. This is not very user friendly, but that's mainly because I just needed a working proof of concept.
-=======
-## ts-map with navigation mode
 
-<b>This is the first time I ever programmed in C#.</b>
+![Preview of the map](/docs/preview.jpg "Preview of the map")
 
-This is a fork of the original ts-map project that includes a navigation mode, giving the possibility to calculate the best path between two prefab items and selecting not only roads but also roads inside prefabs.
->>>>>>> d5c7e3d5c3abf745f5d0863649bf2f871f18fd36
-
-### How does it calculate paths?
-Using Dijkstra's Algorithm. Every single prefab item has a dictionary that contains information of near and reachable prefabs from that specific prefab.
-
-<<<<<<< HEAD
 ### **Support for 1.44**
 
 ## Export Maps
@@ -64,11 +54,3 @@ ATS:
 
 #### Based on
 [Original project](https://github.com/nlhans/ets2-map)
-=======
-### Why is it so slow?
-Because Dijkstra's Algorithm explore all the nodes(prefabs) and since ETS2 currently has nearly 20000 nodes it requires some time to find the best path. There's another algorithm called A* that explore nodes that are more near to the destination calculating an heuristic distance which I think can immediately find a valid path in some milliseconds. I hope to implement it soon.
-
-### How to choose start and end prefabs?
-
-Currently these are choosed randomly since I didn't want to deal with C# UI. The idea was to put three button: the first and the second for enabling a mode where the user can select respectively a start prefab and an end prefab in the visualized area; the third starts the calculation.
->>>>>>> d5c7e3d5c3abf745f5d0863649bf2f871f18fd36
