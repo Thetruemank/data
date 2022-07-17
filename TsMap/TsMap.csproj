@@ -49,6 +49,7 @@
   <ItemGroup>
     <Compile Include="Common\Consts.cs" />
     <Compile Include="Common\Enums.cs" />
+    <Compile Include="Exporter.cs" />
     <Compile Include="FileSystem\CityHash.cs" />
     <Compile Include="FileSystem\Entry.cs" />
     <Compile Include="FileSystem\Hash\HashEntry.cs" />

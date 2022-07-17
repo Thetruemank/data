@@ -28,6 +28,10 @@ namespace TsMap
         public PointF EndPortLocation { get; private set; }
         public List<TsFerryPoint> Connections = new List<TsFerryPoint>();
 
+        public int Price;
+        public int Time;
+        public int Distance;
+
         public void AddConnectionPosition(int index, float x, float z)
         {
             if (Connections.Count > index) return;

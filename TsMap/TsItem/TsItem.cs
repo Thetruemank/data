@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using TsMap.Helpers;
 
 namespace TsMap.TsItem
@@ -10,10 +11,10 @@ namespace TsMap.TsItem
 
         protected readonly TsSector Sector;
         public ulong Uid { get; }
-        protected ulong StartNodeUid;
-        protected ulong EndNodeUid;
-        protected TsNode StartNode;
-        protected TsNode EndNode;
+        public ulong StartNodeUid;
+        public ulong EndNodeUid;
+        public TsNode StartNode;
+        public TsNode EndNode;
 
         public List<ulong> Nodes { get; protected set; }
 
@@ -26,7 +27,9 @@ namespace TsMap.TsItem
         public float Z { get; }
         public bool Hidden { get; protected set; }
 
-        protected uint Flags { get; }
+        public uint Flags { get; }
+
+        public Dictionary<TsPrefabItem, Tuple<float, List<TsItem>>> Navigation { get; set; }
 
         public TsItem(TsSector sector, int offset)
         {

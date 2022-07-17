@@ -8,11 +8,14 @@ namespace TsMap
 {
     public struct TsPrefabNode
     {
+        public int id;
         public float X;
         public float Z;
         public float RotX;
         public float RotZ;
         public int LaneCount;
+        public List<int> InputPoints;
+        public List<int> OutputPoints;
     }
 
     public struct TsMapPoint
@@ -43,12 +46,26 @@ namespace TsMap
         public float Z;
     }
 
+    public struct TsPrefabCurve
+    {
+        public int id;
+        public int idNode;
+        public float start_X;
+        public float start_Z;
+        public float end_X;
+        public float end_Z;
+        public float lenght;
+        public List<int> nextLines;
+        public List<int> prevLines;
+    }
+
     public class TsPrefab
     {
         private const int NodeBlockSize = 0x68;
         private const int MapPointBlockSize = 0x30;
         private const int SpawnPointBlockSize = 0x20;
         private const int TriggerPointBlockSize = 0x30;
+        private const int PrefabCurveSize = 0x84;
 
         public string FilePath { get; }
         public ulong Token { get; }
@@ -63,11 +80,17 @@ namespace TsMap
         public List<TsMapPoint> MapPoints { get; private set; }
         public List<TsTriggerPoint> TriggerPoints { get; private set; }
 
+        public List<TsPrefabCurve> PrefabCurves { get; private set; }
+        public Dictionary<Tuple<TsPrefabNode, TsPrefabNode>, Tuple<List<TsPrefabCurve>, float>> NavigationRoutes { get; private set; }
+
         public TsPrefab(string filePath, ulong token, string category)
         {
             FilePath = filePath;
             Token = token;
             Category = category;
+
+            PrefabCurves = new List<TsPrefabCurve>();
+            NavigationRoutes = new Dictionary<Tuple<TsPrefabNode, TsPrefabNode>, Tuple<List<TsPrefabCurve>, float>>();
 
             var file = UberFileSystem.Instance.GetFile(FilePath);
 
@@ -97,6 +120,7 @@ namespace TsMap
 
             var nodeCount = BitConverter.ToInt32(_stream, fileOffset += 0x04);
             var navCurveCount = BitConverter.ToInt32(_stream, fileOffset += 0x04);
+            var curveCount = navCurveCount;
             ValidRoad = navCurveCount != 0;
             var spawnPointCount = BitConverter.ToInt32(_stream, fileOffset += 0x0C);
             var mapPointCount = BitConverter.ToInt32(_stream, fileOffset += 0x0C);
@@ -105,19 +129,40 @@ namespace TsMap
             if (version > 0x15) fileOffset += 0x04; // http://modding.scssoft.com/wiki/Games/ETS2/Modding_guides/1.30#Prefabs
 
             var nodeOffset = MemoryHelper.ReadInt32(_stream, fileOffset += 0x08);
-            var spawnPointOffset = MemoryHelper.ReadInt32(_stream, fileOffset += 0x10);
+            var curveOffset = BitConverter.ToInt32(_stream, fileOffset += 0x04);
+            var spawnPointOffset = MemoryHelper.ReadInt32(_stream, fileOffset += 0x0C);
             var mapPointOffset = MemoryHelper.ReadInt32(_stream, fileOffset += 0x10);
             var triggerPointOffset = MemoryHelper.ReadInt32(_stream, fileOffset += 0x04);
 
             for (var i = 0; i < nodeCount; i++)
             {
                 var nodeBaseOffset = nodeOffset + (i * NodeBlockSize);
+                
+                var listInput = new List<int>();
+                var listOutput = new List<int>();
+                for (var j = 0; j < 8; j++)
+                {
+                    var inVal = BitConverter.ToInt32(_stream, nodeBaseOffset + 0x28 + j * 4);
+                    var outVal = BitConverter.ToInt32(_stream, nodeBaseOffset + 0x48 + j * 4);
+                    if (inVal != -1)
+                    {
+                        listInput.Add(inVal);
+                    }
+                    if (outVal != -1)
+                    {
+                        listOutput.Add(outVal);
+                    }
+                }
+
                 var node = new TsPrefabNode
                 {
+                    id = i,
                     X = MemoryHelper.ReadSingle(_stream, nodeBaseOffset + 0x10),
                     Z = MemoryHelper.ReadSingle(_stream, nodeBaseOffset + 0x18),
                     RotX = MemoryHelper.ReadSingle(_stream, nodeBaseOffset + 0x1C),
                     RotZ = MemoryHelper.ReadSingle(_stream, nodeBaseOffset + 0x24),
+                    InputPoints = listInput,
+                    OutputPoints = listOutput
                 };
 
                 int laneCount = 0;
@@ -136,6 +181,36 @@ namespace TsMap
                 PrefabNodes.Add(node);
             }
 
+            for (var i = 0; i < curveCount; i++)
+            {
+                var curveBaseOffset = curveOffset + (i * PrefabCurveSize);
+                var countNextLines = BitConverter.ToInt32(_stream, curveBaseOffset + 0x6C);
+                var nextLinesList = new List<int>();
+                for (var j = 0; j < countNextLines; j++)
+                {
+                    nextLinesList.Add(BitConverter.ToInt32(_stream, curveBaseOffset + 0x4C + j * 4));
+                }
+                var countPrevLines = BitConverter.ToInt32(_stream, curveBaseOffset + 0x70);
+                var prevLinesList = new List<int>();
+                for (var j = 0; j < countPrevLines; j++)
+                {
+                    prevLinesList.Add(BitConverter.ToInt32(_stream, curveBaseOffset + 0x5C + j * 4));
+                }
+                var curve = new TsPrefabCurve
+                {
+                    id = i,
+                    idNode = BitConverter.ToInt32(_stream, curveBaseOffset + 0x0C),
+                    start_X = BitConverter.ToSingle(_stream, curveBaseOffset + 0x10),
+                    start_Z = BitConverter.ToSingle(_stream, curveBaseOffset + 0x18),
+                    end_X = BitConverter.ToSingle(_stream, curveBaseOffset + 0x1C),
+                    end_Z = BitConverter.ToSingle(_stream, curveBaseOffset + 0x24),
+                    lenght = BitConverter.ToSingle(_stream, curveBaseOffset + 0x44),
+                    nextLines = nextLinesList,
+                    prevLines = prevLinesList
+                };
+                PrefabCurves.Add(curve);
+            }
+
             for (var i = 0; i < spawnPointCount; i++)
             {
                 var spawnPointBaseOffset = spawnPointOffset + (i * SpawnPointBlockSize);
@@ -147,6 +222,67 @@ namespace TsMap
                 };
                 SpawnPoints.Add(spawnPoint);
                 // Log.Msg($"Spawn point of type: {spawnPoint.Type} in {_filePath}");
+            }
+
+            foreach (var inputNode in PrefabNodes)
+            {
+                foreach (var outputNode in PrefabNodes)
+                {
+                    if (inputNode.id == outputNode.id) continue;
+                    var defaultCurve = default(TsPrefabCurve);
+                    defaultCurve.id = -1;
+                    Dictionary<TsPrefabCurve, Tuple<int, TsPrefabCurve>> distances = new Dictionary<TsPrefabCurve, Tuple<int, TsPrefabCurve>>();
+                    Dictionary<TsPrefabCurve, bool> visited = new Dictionary<TsPrefabCurve, bool>();
+                    foreach (var curve in PrefabCurves)
+                    {
+                        distances[curve] = new Tuple<int, TsPrefabCurve>(Int32.MaxValue, defaultCurve);
+                    }
+                    foreach (var inputCurves in inputNode.InputPoints)
+                    {
+                        distances[PrefabCurves[inputCurves]] = new Tuple<int, TsPrefabCurve>(0, defaultCurve);
+                    }
+                    var actualCurve = defaultCurve;
+                    while (!outputNode.OutputPoints.Contains(actualCurve.id))
+                    {
+                        var minVal = Int32.MaxValue;
+                        var minCurve = defaultCurve;
+                        foreach (var distance in distances)
+                        {
+                            if (!visited.ContainsKey(distance.Key))
+                            {
+                                if (distance.Value.Item1 < minVal)
+                                {
+                                    minVal = distance.Value.Item1;
+                                    minCurve = distance.Key;
+                                }
+                            }
+                        }
+                        actualCurve = minCurve;
+                        if (actualCurve.id == -1) break;
+                        visited[actualCurve] = true;
+                        foreach (var nextCurveId in actualCurve.nextLines)
+                        {
+                            var nextCurve = PrefabCurves[nextCurveId];
+                            if (minVal + 1 < distances[nextCurve].Item1 && !visited.ContainsKey(nextCurve))
+                            {
+                                distances[nextCurve] = new Tuple<int, TsPrefabCurve>(minVal + 1, actualCurve);
+                            }
+                        }
+                    }
+                    if (actualCurve.id != -1)
+                    {
+                        List<TsPrefabCurve> path = new List<TsPrefabCurve>();
+                        float length = (float)distances[actualCurve].Item1;
+                        float distanceLength = 0.0f;
+                        while (actualCurve.id != -1)
+                        {
+                            distanceLength += (float)Math.Sqrt(Math.Pow(actualCurve.start_X - actualCurve.end_X, 2) + Math.Pow(actualCurve.start_Z - actualCurve.end_Z, 2));
+                            path.Add(actualCurve);
+                            actualCurve = distances[actualCurve].Item2;
+                        }
+                        NavigationRoutes.Add(new Tuple<TsPrefabNode, TsPrefabNode>(inputNode, outputNode), new Tuple<List<TsPrefabCurve>, float>(path, distanceLength));
+                    }
+                }
             }
 
             for (var i = 0; i < mapPointCount; i++)

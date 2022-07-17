@@ -58,124 +58,125 @@ namespace TsMap
                 switch (type)
                 {
                     case TsItemType.Road:
-                    {
-                        var item = new TsRoadItem(this, lastOffset);
-                        lastOffset += item.BlockSize;
-                        if (item.Valid) Mapper.Roads.Add(item);
-                        break;
-                    }
+                        {
+                            var item = new TsRoadItem(this, lastOffset);
+                            lastOffset += item.BlockSize;
+                            if (item.Valid) Mapper.Roads.Add(item);
+                            break;
+                        }
                     case TsItemType.Prefab:
-                    {
-                        var item = new TsPrefabItem(this, lastOffset);
-                        lastOffset += item.BlockSize;
-                        if (item.Valid) Mapper.Prefabs.Add(item);
-                        break;
-                    }
+                        {
+                            var item = new TsPrefabItem(this, lastOffset);
+                            lastOffset += item.BlockSize;
+                            if (item.Valid) Mapper.Prefabs.Add(item);
+                            break;
+                        }
                     case TsItemType.Company:
-                    {
-                        var item = new TsCompanyItem(this, lastOffset);
-                        lastOffset += item.BlockSize;
-                        if (item.Valid) Mapper.Companies.Add(item);
-                        break;
-                    }
+                        {
+                            var item = new TsCompanyItem(this, lastOffset);
+                            lastOffset += item.BlockSize;
+                            if (item.Valid) Mapper.Companies.Add(item);
+                            break;
+                        }
                     case TsItemType.Service:
-                    {
-                        var item = new TsServiceItem(this, lastOffset);
-                        lastOffset += item.BlockSize;
-                        break;
-                    }
+                        {
+                            var item = new TsServiceItem(this, lastOffset);
+                            lastOffset += item.BlockSize;
+                            break;
+                        }
                     case TsItemType.CutPlane:
-                    {
-                        var item = new TsCutPlaneItem(this, lastOffset);
-                        lastOffset += item.BlockSize;
-                        break;
-                    }
+                        {
+                            var item = new TsCutPlaneItem(this, lastOffset);
+                            lastOffset += item.BlockSize;
+                            break;
+                        }
                     case TsItemType.City:
-                    {
-                        var item = new TsCityItem(this, lastOffset);
-                        lastOffset += item.BlockSize;
-                        if (item.Valid) Mapper.Cities.Add(item); break;
-                    }
+                        {
+                            var item = new TsCityItem(this, lastOffset);
+                            lastOffset += item.BlockSize;
+                            if (item.Valid) Mapper.Cities.Add(item); break;
+                        }
                     case TsItemType.MapOverlay:
-                    {
-                        var item = new TsMapOverlayItem(this, lastOffset);
-                        lastOffset += item.BlockSize;
-                        if (item.Valid) Mapper.MapOverlays.Add(item); break;
-                    }
+                        {
+                            var item = new TsMapOverlayItem(this, lastOffset);
+                            lastOffset += item.BlockSize;
+                            if (item.Valid) Mapper.MapOverlays.Add(item); break;
+                        }
                     case TsItemType.Ferry:
-                    {
-                        var item = new TsFerryItem(this, lastOffset);
-                        lastOffset += item.BlockSize;
-                        if (item.Valid) Mapper.FerryConnections.Add(item); break;
-                    }
+                        {
+                            var item = new TsFerryItem(this, lastOffset);
+                            lastOffset += item.BlockSize;
+                            if (item.Valid) Mapper.FerryPortbyId.Add(item.FerryPortId, item);
+                            if (item.Valid) Mapper.FerryConnections.Add(item); break;
+                        }
                     case TsItemType.Garage:
-                    {
-                        var item = new TsGarageItem(this, lastOffset);
-                        lastOffset += item.BlockSize;
-                        break;
-                    }
+                        {
+                            var item = new TsGarageItem(this, lastOffset);
+                            lastOffset += item.BlockSize;
+                            break;
+                        }
                     case TsItemType.Trigger:
-                    {
-                        var item = new TsTriggerItem(this, lastOffset);
-                        lastOffset += item.BlockSize;
-                        if (item.Valid) Mapper.Triggers.Add(item);
-                        break;
-                    }
+                        {
+                            var item = new TsTriggerItem(this, lastOffset);
+                            lastOffset += item.BlockSize;
+                            if (item.Valid) Mapper.Triggers.Add(item);
+                            break;
+                        }
                     case TsItemType.FuelPump:
-                    {
-                        var item = new TsFuelPumpItem(this, lastOffset);
-                        lastOffset += item.BlockSize;
-                        break;
-                    }
+                        {
+                            var item = new TsFuelPumpItem(this, lastOffset);
+                            lastOffset += item.BlockSize;
+                            break;
+                        }
                     case TsItemType.RoadSideItem:
-                    {
-                        var item = new TsRoadSideItem(this, lastOffset);
-                        lastOffset += item.BlockSize;
-                        break;
-                    }
+                        {
+                            var item = new TsRoadSideItem(this, lastOffset);
+                            lastOffset += item.BlockSize;
+                            break;
+                        }
                     case TsItemType.BusStop:
-                    {
-                        var item = new TsBusStopItem(this, lastOffset);
-                        lastOffset += item.BlockSize;
-                        break;
-                    }
+                        {
+                            var item = new TsBusStopItem(this, lastOffset);
+                            lastOffset += item.BlockSize;
+                            break;
+                        }
                     case TsItemType.TrafficRule:
-                    {
-                        var item = new TsTrafficRuleItem(this, lastOffset);
-                        lastOffset += item.BlockSize;
-                        break;
-                    }
+                        {
+                            var item = new TsTrafficRuleItem(this, lastOffset);
+                            lastOffset += item.BlockSize;
+                            break;
+                        }
                     case TsItemType.TrajectoryItem:
-                    {
-                        var item = new TsTrajectoryItem(this, lastOffset);
-                        lastOffset += item.BlockSize;
-                        break;
-                    }
+                        {
+                            var item = new TsTrajectoryItem(this, lastOffset);
+                            lastOffset += item.BlockSize;
+                            break;
+                        }
                     case TsItemType.MapArea:
-                    {
-                        var item = new TsMapAreaItem(this, lastOffset);
-                        lastOffset += item.BlockSize;
-                        if (item.Valid) Mapper.MapAreas.Add(item);
-                        break;
-                    }
+                        {
+                            var item = new TsMapAreaItem(this, lastOffset);
+                            lastOffset += item.BlockSize;
+                            if (item.Valid) Mapper.MapAreas.Add(item);
+                            break;
+                        }
                     case TsItemType.Cutscene:
-                    {
-                        var item = new TsCutsceneItem(this, lastOffset);
-                        lastOffset += item.BlockSize;
-                        if (item.Valid) Mapper.Viewpoints.Add(item);
-                        break;
-                    }
+                        {
+                            var item = new TsCutsceneItem(this, lastOffset);
+                            lastOffset += item.BlockSize;
+                            if (item.Valid) Mapper.Viewpoints.Add(item);
+                            break;
+                        }
                     case TsItemType.VisibilityArea:
-                    {
-                        var item = new TsVisibilityAreaItem(this, lastOffset);
-                        lastOffset += item.BlockSize;
-                        break;
-                    }
+                        {
+                            var item = new TsVisibilityAreaItem(this, lastOffset);
+                            lastOffset += item.BlockSize;
+                            break;
+                        }
                     default:
-                    {
-                        Logger.Instance.Warning($"Unknown Type: {type} in {Path.GetFileName(FilePath)} @ {lastOffset}");
-                        break;
-                    }
+                        {
+                            Logger.Instance.Warning($"Unknown Type: {type} in {Path.GetFileName(FilePath)} @ {lastOffset}");
+                            break;
+                        }
                 }
             }
 

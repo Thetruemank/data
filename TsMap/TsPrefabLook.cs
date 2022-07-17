@@ -7,14 +7,16 @@ namespace TsMap
     {
         public int ZIndex { get; set; }
         public Brush Color { get; set; }
-        protected readonly List<PointF> Points;
+        public readonly List<PointF> Points;
+        public readonly TsItem.TsPrefabItem PrefabItem;
 
-        protected TsPrefabLook(List<PointF> points)
+        protected TsPrefabLook(List<PointF> points, TsItem.TsPrefabItem prefabItem)
         {
             Points = points;
+            PrefabItem = prefabItem;
         }
 
-        protected TsPrefabLook() : this(new List<PointF>()) { }
+        protected TsPrefabLook() : this(new List<PointF>(), null) { }
 
         public void AddPoint(PointF p)
         {
@@ -46,7 +48,7 @@ namespace TsMap
 
     public class TsPrefabPolyLook : TsPrefabLook
     {
-        public TsPrefabPolyLook(List<PointF> points) : base(points) { }
+        public TsPrefabPolyLook(List<PointF> points, TsItem.TsPrefabItem prefabItem) : base(points, prefabItem) { }
 
         public override void Draw(Graphics g)
         {

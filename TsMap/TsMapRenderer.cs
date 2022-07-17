@@ -23,6 +23,8 @@ namespace TsMap
             _mapper = mapper;
         }
 
+        private bool exported;
+
         public void Render(Graphics g, Rectangle clip, float scale, PointF startPoint, MapPalette palette, RenderFlags renderFlags = RenderFlags.All)
         {
             var startTime = DateTime.Now.Ticks;
@@ -41,6 +43,30 @@ namespace TsMap
                 return;
             }
 
+            var centerX = startPoint.X;
+            var centerY = startPoint.Y;
+
+            float totalX, totalY;
+
+            if (clip.Width > clip.Height)
+            {
+                totalX = scale;
+                totalY = scale * clip.Height / clip.Width;
+            }
+            else
+            {
+                totalY = scale;
+                totalX = scale * clip.Width / clip.Height;
+            }
+
+            var startX = clip.X + centerX - totalX;
+            var endX = clip.X + centerX + totalX;
+            var startY = clip.Y + centerY - totalY;
+            var endY = clip.Y + centerY + totalY;
+
+            var scaleX = clip.Width / (endX - startX);
+            var scaleY = clip.Height / (endY - startY);
+
             var zoomIndex = RenderHelper.GetZoomIndex(clip, scale);
 
             var endPoint = new PointF(startPoint.X + clip.Width / scale, startPoint.Y + clip.Height / scale);
@@ -51,7 +77,7 @@ namespace TsMap
                 var ferryConnections = _mapper.FerryConnections.Where(item => !item.Hidden)
                     .ToList();
 
-                var ferryPen = new Pen(palette.FerryLines, 50) {DashPattern = new[] {10f, 10f}};
+                var ferryPen = new Pen(palette.FerryLines, 50) { DashPattern = new[] { 10f, 10f } };
 
                 foreach (var ferryConnection in ferryConnections)
                 {
@@ -61,6 +87,15 @@ namespace TsMap
                     {
                         if (conn.Connections.Count == 0) // no extra nodes -> straight line
                         {
+                            if (_mapper.RouteFerryPorts.ContainsKey(_mapper.FerryPortbyId[conn.StartPortToken]) ||
+                             _mapper.RouteFerryPorts.ContainsKey(_mapper.FerryPortbyId[conn.EndPortToken]))
+                            {
+                                ferryPen = new Pen(Brushes.Red, 50) { DashPattern = new[] { 10f, 10f } };
+                            }
+                            else
+                            {
+                                ferryPen = new Pen(palette.FerryLines, 50) { DashPattern = new[] { 10f, 10f } };
+                            }
                             g.DrawLine(ferryPen, conn.StartPortLocation, conn.EndPortLocation);
                             continue;
                         }
@@ -103,6 +138,14 @@ namespace TsMap
                         bezierPoints.Add(new PointF(lastFerryPoint.X + bezierNodes.Item1.X, lastFerryPoint.Z + bezierNodes.Item1.Y)); // control1
                         bezierPoints.Add(new PointF(conn.EndPortLocation.X - bezierNodes.Item2.X, conn.EndPortLocation.Y - bezierNodes.Item2.Y)); // control2
                         bezierPoints.Add(new PointF(conn.EndPortLocation.X, conn.EndPortLocation.Y)); // end
+
+                        var color = palette.FerryLines;
+                        if (_mapper.RouteFerryPorts.ContainsKey(_mapper.FerryPortbyId[conn.StartPortToken]) ||
+                             _mapper.RouteFerryPorts.ContainsKey(_mapper.FerryPortbyId[conn.EndPortToken]))
+                        {
+                            color = Brushes.Red;
+                        }
+                        ferryPen = new Pen(color, 50) { DashPattern = new[] { 10f, 10f } };
 
                         g.DrawBeziers(ferryPen, bezierPoints.ToArray());
                     }
@@ -172,10 +215,12 @@ namespace TsMap
                         var rot = (float)(originNode.Rotation - Math.PI -
                                            Math.Atan2(mapPointOrigin.RotZ, mapPointOrigin.RotX) + Math.PI / 2);
 
-                        var prefabstartX = originNode.X - mapPointOrigin.X;
+                        var prefabStartX = originNode.X - mapPointOrigin.X;
                         var prefabStartZ = originNode.Z - mapPointOrigin.Z;
 
                         List<int> pointsDrawn = new List<int>();
+
+                        bool navPrefContains = _mapper.RoutePrefabs.Contains(prefabItem);
 
                         for (var i = 0; i < prefabItem.Prefab.MapPoints.Count; i++)
                         {
@@ -196,7 +241,7 @@ namespace TsMap
                                         {
                                             nextPoint = neighbour;
                                             var newPoint = RenderHelper.RotatePoint(
-                                                prefabstartX + prefabItem.Prefab.MapPoints[nextPoint].X,
+                                                prefabStartX + prefabItem.Prefab.MapPoints[nextPoint].X,
                                                 prefabStartZ + prefabItem.Prefab.MapPoints[nextPoint].Z, rot, originNode.X,
                                                 originNode.Z);
 
@@ -217,10 +262,10 @@ namespace TsMap
                                 else if ((colorFlag & 0x08) != 0) fillColor = palette.PrefabGreen;
                                 // else fillColor = _palette.Error; // Unknown
 
-                                var prefabLook = new TsPrefabPolyLook(polyPoints.Values.ToList())
+                                var prefabLook = new TsPrefabPolyLook(polyPoints.Values.ToList(), prefabItem)
                                 {
                                     ZIndex = ((colorFlag & 0x01) != 0) ? 3 : 2,
-                                    Color = fillColor
+                                    Color = ((_mapper.PrefabNav.ContainsKey(prefabItem) && _mapper.PrefabNav.ContainsKey(prefabItem)) || navPrefContains) ? Brushes.Red : fillColor
                                 };
 
                                 prefabItem.AddLook(prefabLook);
@@ -261,43 +306,88 @@ namespace TsMap
 
                                 var cornerCoords = new List<PointF>();
 
-                                var coords = RenderHelper.GetCornerCoords(prefabstartX + mapPoint.X, prefabStartZ + mapPoint.Z,
+                                var coords = RenderHelper.GetCornerCoords(prefabStartX + mapPoint.X, prefabStartZ + mapPoint.Z,
                                     (Consts.LaneWidth * mapPointLaneCount + mapPoint.LaneOffset) / 2f, roadYaw + Math.PI / 2);
 
                                 cornerCoords.Add(RenderHelper.RotatePoint(coords.X, coords.Y, rot, originNode.X, originNode.Z));
 
-                                coords = RenderHelper.GetCornerCoords(prefabstartX + neighbourPoint.X, prefabStartZ + neighbourPoint.Z,
+                                coords = RenderHelper.GetCornerCoords(prefabStartX + neighbourPoint.X, prefabStartZ + neighbourPoint.Z,
                                     (Consts.LaneWidth * neighbourLaneCount + neighbourPoint.LaneOffset) / 2f,
                                     roadYaw + Math.PI / 2);
                                 cornerCoords.Add(RenderHelper.RotatePoint(coords.X, coords.Y, rot, originNode.X, originNode.Z));
 
-                                coords = RenderHelper.GetCornerCoords(prefabstartX + neighbourPoint.X, prefabStartZ + neighbourPoint.Z,
+                                coords = RenderHelper.GetCornerCoords(prefabStartX + neighbourPoint.X, prefabStartZ + neighbourPoint.Z,
                                     (Consts.LaneWidth * neighbourLaneCount + mapPoint.LaneOffset) / 2f,
                                     roadYaw - Math.PI / 2);
                                 cornerCoords.Add(RenderHelper.RotatePoint(coords.X, coords.Y, rot, originNode.X, originNode.Z));
 
-                                coords = RenderHelper.GetCornerCoords(prefabstartX + mapPoint.X, prefabStartZ + mapPoint.Z,
+                                coords = RenderHelper.GetCornerCoords(prefabStartX + mapPoint.X, prefabStartZ + mapPoint.Z,
                                     (Consts.LaneWidth * mapPointLaneCount + mapPoint.LaneOffset) / 2f, roadYaw - Math.PI / 2);
                                 cornerCoords.Add(RenderHelper.RotatePoint(coords.X, coords.Y, rot, originNode.X, originNode.Z));
 
-                                TsPrefabLook prefabLook = new TsPrefabPolyLook(cornerCoords)
+                                TsPrefabLook prefabLook = new TsPrefabPolyLook(cornerCoords, prefabItem)
                                 {
-                                    Color = palette.PrefabRoad,
+                                    Color = ((_mapper.PrefabNav.ContainsKey(prefabItem) && _mapper.PrefabNav.ContainsKey(prefabItem)) || navPrefContains) ? Brushes.Red : palette.PrefabRoad,
                                     ZIndex = 4,
                                 };
+
+                                /*if ((_mapper.PrefabNav.ContainsKey(prefabItem) && _mapper.PrefabNav.ContainsKey(prefabItem) && _mapper.PrefabNav[prefabItem].Contains(prefabItem.Prefab.PrefabCurves[i])) || _mapper.RoutePrefabs.Contains(prefabItem))
+                                {
+                                    prefabLook = new TsPrefabPolyLook(cornerCoords)
+                                    {
+                                        Color = Brushes.Red,
+                                        ZIndex = 1000,
+                                    };
+                                }*/
 
                                 prefabItem.AddLook(prefabLook);
                             }
                         }
+
+                        /*for (int i = 0; i < prefabItem.Prefab.PrefabCurves.Count; i++)
+                        {
+                            var newPointStart = RenderHelper.RotatePoint(prefabStartX + prefabItem.Prefab.PrefabCurves[i].start_X, prefabStartZ + prefabItem.Prefab.PrefabCurves[i].start_Z, rot, originNode.X, originNode.Z);
+                            var newPointEnd = RenderHelper.RotatePoint(prefabStartX + prefabItem.Prefab.PrefabCurves[i].end_X, prefabStartZ + prefabItem.Prefab.PrefabCurves[i].end_Z, rot, originNode.X, originNode.Z);
+                            var color = palette.PrefabRoad;
+                            var zind = 4;
+
+                            if ((_mapper.PrefabNav.ContainsKey(prefabItem) && _mapper.PrefabNav.ContainsKey(prefabItem) && _mapper.PrefabNav[prefabItem].Contains(prefabItem.Prefab.PrefabCurves[i])) || _mapper.RoutePrefabs.Contains(prefabItem))
+                            {
+                                color = Brushes.Red;
+                                zind = 1000;
+                            }
+
+                            TsPrefabLook prefabLook = new TsPrefabRoadLook()
+                            {
+                                Color = color,
+                                Width = 10f * scaleX,
+                                ZIndex = zind
+                            };
+
+                            prefabLook.AddPoint((newPointStart.X - startX) * scaleX, (newPointStart.Y - startY) * scaleY);
+                            prefabLook.AddPoint((newPointEnd.X - startX) * scaleX, (newPointEnd.Y - startY) * scaleY);
+
+                            drawingQueue.Add(prefabLook);
+                        }*/
                     }
 
                     prefabItem.GetLooks().ForEach(x => drawingQueue.Add(x));
+
+                    foreach (var prefabLook in drawingQueue.OrderBy(p => p.ZIndex))
+                    {
+                        prefabLook.Draw(g);
+                    }
                 }
 
-                foreach (var prefabLook in drawingQueue.OrderBy(p => p.ZIndex))
+                prefabs.ForEach(p =>
                 {
-                    prefabLook.Draw(g);
-                }
+                    if (p.HasLooks() && false)
+                    {
+                        var l = p.GetLooks()[0];
+                        if (l.PrefabItem != null)
+                            g.DrawString("POS: " + l.PrefabItem.X + " | " + l.PrefabItem.Z, _defaultFont, Brushes.Pink, l.Points[0].X, l.Points[0].Y);
+                    }
+                });
             }
             var prefabTime = DateTime.Now.Ticks - prefabStartTime;
 
@@ -337,9 +427,9 @@ namespace TsMap
 
                         for (var i = 0; i < 8; i++)
                         {
-                            var s = i / (float) (8 - 1);
-                            var x = (float) TsRoadLook.Hermite(s, sx, ex, tanSx, tanEx);
-                            var z = (float) TsRoadLook.Hermite(s, sz, ez, tanSz, tanEz);
+                            var s = i / (float)(8 - 1);
+                            var x = (float)TsRoadLook.Hermite(s, sx, ex, tanSx, tanEx);
+                            var z = (float)TsRoadLook.Hermite(s, sz, ez, tanSz, tanEz);
                             newPoints.Add(new PointF(x, z));
                         }
                         road.AddPoints(newPoints);
@@ -351,7 +441,7 @@ namespace TsMap
                     {
                         if (zoomIndex < 3)
                         {
-                            roadPen = new Pen(palette.Road, roadWidth) {DashPattern = new[] {1f, 1f}};
+                            roadPen = new Pen(palette.Road, roadWidth) { DashPattern = new[] { 1f, 1f } };
                         }
                         else // zoomed out with DashPattern causes OutOfMemory Exception
                         {
@@ -362,7 +452,11 @@ namespace TsMap
                     {
                         roadPen = new Pen(palette.Road, roadWidth);
                     }
-                    g.DrawCurve(roadPen, road.GetPoints()?.ToArray());
+
+                    var color = palette.Road;
+                    if (_mapper.RouteRoads.Contains(road)) color = Brushes.Red;
+
+                    g.DrawCurve(new Pen(color, roadWidth), road.GetPoints().ToArray());
                     roadPen.Dispose();
                 }
             }
@@ -443,7 +537,7 @@ namespace TsMap
                     if (prefab.Prefab.PrefabNodes == null) continue;
                     var mapPointOrigin = prefab.Prefab.PrefabNodes[prefab.Origin];
 
-                    var rot = (float) (originNode.Rotation - Math.PI -
+                    var rot = (float)(originNode.Rotation - Math.PI -
                                        Math.Atan2(mapPointOrigin.RotZ, mapPointOrigin.RotX) + Math.PI / 2);
 
                     var prefabstartX = originNode.X - mapPointOrigin.X;
@@ -458,41 +552,41 @@ namespace TsMap
                         switch (spawnPoint.Type)
                         {
                             case TsSpawnPointType.GasPos:
-                            {
-                                var overlay = _mapper.LookupOverlay("gas_ico", OverlayTypes.Map);
-                                b = overlay?.GetBitmap();
-                                break;
-                            }
+                                {
+                                    var overlay = _mapper.LookupOverlay("gas_ico", OverlayTypes.Map);
+                                    b = overlay?.GetBitmap();
+                                    break;
+                                }
                             case TsSpawnPointType.ServicePos:
-                            {
-                                var overlay = _mapper.LookupOverlay("service_ico", OverlayTypes.Map);
-                                b = overlay?.GetBitmap();
-                                break;
-                            }
+                                {
+                                    var overlay = _mapper.LookupOverlay("service_ico", OverlayTypes.Map);
+                                    b = overlay?.GetBitmap();
+                                    break;
+                                }
                             case TsSpawnPointType.WeightStationPos:
-                            {
-                                var overlay = _mapper.LookupOverlay("weigh_station_ico", OverlayTypes.Map);
-                                b = overlay?.GetBitmap();
-                                break;
-                            }
+                                {
+                                    var overlay = _mapper.LookupOverlay("weigh_station_ico", OverlayTypes.Map);
+                                    b = overlay?.GetBitmap();
+                                    break;
+                                }
                             case TsSpawnPointType.TruckDealerPos:
-                            {
-                                var overlay = _mapper.LookupOverlay("dealer_ico", OverlayTypes.Map);
-                                b = overlay?.GetBitmap();
-                                break;
-                            }
+                                {
+                                    var overlay = _mapper.LookupOverlay("dealer_ico", OverlayTypes.Map);
+                                    b = overlay?.GetBitmap();
+                                    break;
+                                }
                             case TsSpawnPointType.BuyPos:
-                            {
-                                var overlay = _mapper.LookupOverlay("garage_large_ico", OverlayTypes.Map);
-                                b = overlay?.GetBitmap();
-                                break;
-                            }
+                                {
+                                    var overlay = _mapper.LookupOverlay("garage_large_ico", OverlayTypes.Map);
+                                    b = overlay?.GetBitmap();
+                                    break;
+                                }
                             case TsSpawnPointType.RecruitmentPos:
-                            {
-                                var overlay = _mapper.LookupOverlay("recruitment_ico", OverlayTypes.Map);
-                                b = overlay?.GetBitmap();
-                                break;
-                            }
+                                {
+                                    var overlay = _mapper.LookupOverlay("recruitment_ico", OverlayTypes.Map);
+                                    b = overlay?.GetBitmap();
+                                    break;
+                                }
                         }
                         if (b != null)
                             g.DrawImage(b, newPoint.X - b.Width / 2f, newPoint.Y - b.Height / 2f, b.Width, b.Height);
@@ -506,7 +600,7 @@ namespace TsMap
                             originNode.X, originNode.Z);
 
                         if (triggerPoint.TriggerId == lastId) continue;
-                        lastId = (int) triggerPoint.TriggerId;
+                        lastId = (int)triggerPoint.TriggerId;
 
                         if (triggerPoint.TriggerActionToken == ScsToken.StringToToken("hud_parking")) // parking trigger
                         {
@@ -602,14 +696,22 @@ namespace TsMap
                     $"DrawTime: {elapsedTime / TimeSpan.TicksPerMillisecond} ms, x: {startPoint.X}, y: {startPoint.Y}, scale: {scale}",
                     _defaultFont, Brushes.WhiteSmoke, 5, 5);
 
-                //g.FillRectangle(new SolidBrush(Color.FromArgb(100, 0, 0, 0)), 5, 20, 150, 150);
-                //g.DrawString($"Road: {roadTime / TimeSpan.TicksPerMillisecond}ms", _defaultFont, Brushes.White, 10, 40);
-                //g.DrawString($"Prefab: {prefabTime / TimeSpan.TicksPerMillisecond}ms", _defaultFont, Brushes.White, 10, 55);
-                //g.DrawString($"Ferry: {ferryTime / TimeSpan.TicksPerMillisecond}ms", _defaultFont, Brushes.White, 10, 70);
-                //g.DrawString($"MapOverlay: {mapOverlayTime / TimeSpan.TicksPerMillisecond}ms", _defaultFont, Brushes.White, 10, 85);
-                //g.DrawString($"MapOverlay2: {mapOverlay2Time / TimeSpan.TicksPerMillisecond}ms", _defaultFont, Brushes.White, 10, 100);
-                //g.DrawString($"MapArea: {mapAreaTime / TimeSpan.TicksPerMillisecond}ms", _defaultFont, Brushes.White, 10, 115);
-                //g.DrawString($"City: {cityTime / TimeSpan.TicksPerMillisecond}ms", _defaultFont, Brushes.White, 10, 130);
+                g.FillRectangle(new SolidBrush(Color.FromArgb(100, 0, 0, 0)), 5, 20, 150, 150);
+                g.DrawString($"Road: {roadTime / TimeSpan.TicksPerMillisecond}ms", _defaultFont, Brushes.White, 10, 40);
+                g.DrawString($"Prefab: {prefabTime / TimeSpan.TicksPerMillisecond}ms", _defaultFont, Brushes.White, 10, 55);
+                g.DrawString($"Ferry: {ferryTime / TimeSpan.TicksPerMillisecond}ms", _defaultFont, Brushes.White, 10, 70);
+                g.DrawString($"MapOverlay: {mapOverlayTime / TimeSpan.TicksPerMillisecond}ms", _defaultFont, Brushes.White, 10, 85);
+                g.DrawString($"MapOverlay2: {mapOverlay2Time / TimeSpan.TicksPerMillisecond}ms", _defaultFont, Brushes.White, 10, 100);
+                g.DrawString($"MapArea: {mapAreaTime / TimeSpan.TicksPerMillisecond}ms", _defaultFont, Brushes.White, 10, 115);
+                g.DrawString($"City: {cityTime / TimeSpan.TicksPerMillisecond}ms", _defaultFont, Brushes.White, 10, 130);
+            }
+
+            if(!exported)
+            {
+                Logger.Instance.Info("Start export");
+                Exporter.Export(_mapper);
+                Logger.Instance.Info("End export");
+                exported = true;
             }
 
         }

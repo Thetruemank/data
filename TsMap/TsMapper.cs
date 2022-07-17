@@ -31,8 +31,8 @@ namespace TsMap
         private readonly Dictionary<ulong, TsCountry> _countriesLookup = new Dictionary<ulong, TsCountry>();
         private readonly Dictionary<ulong, TsRoadLook> _roadLookup = new Dictionary<ulong, TsRoadLook>();
         private readonly Dictionary<ulong, TsMapOverlay> _overlayCache = new Dictionary<ulong, TsMapOverlay>();
-        private readonly List<TsFerryConnection> _ferryConnectionLookup = new List<TsFerryConnection>();
 
+        public readonly List<TsFerryConnection> FerryConnectionLookup = new List<TsFerryConnection>();
         public readonly List<TsRoadItem> Roads = new List<TsRoadItem>();
         public readonly List<TsPrefabItem> Prefabs = new List<TsPrefabItem>();
         public readonly List<TsMapAreaItem> MapAreas = new List<TsMapAreaItem>();
@@ -43,6 +43,7 @@ namespace TsMap
         public readonly List<TsTriggerItem> Triggers = new List<TsTriggerItem>();
         public readonly List<TsCutsceneItem> Viewpoints = new List<TsCutsceneItem>();
 
+        public readonly Dictionary<ulong, TsItem.TsItem> Items = new Dictionary<ulong, TsItem.TsItem>();
         public readonly Dictionary<ulong, TsNode> Nodes = new Dictionary<ulong, TsNode>();
 
         public float minX = float.MaxValue;
@@ -52,12 +53,24 @@ namespace TsMap
 
         private List<TsSector> Sectors { get; set; }
 
+        public List<TsRoadItem> RouteRoads = new List<TsRoadItem>();
+        public List<TsPrefabItem> RoutePrefabs = new List<TsPrefabItem>();
+        public Dictionary<TsFerryItem, TsFerryItem> RouteFerryPorts = new Dictionary<TsFerryItem, TsFerryItem>();
+        public Dictionary<TsPrefabItem, List<TsPrefabCurve>> PrefabNav = new Dictionary<TsPrefabItem, List<TsPrefabCurve>>();
+
+        public readonly Dictionary<ulong, TsFerryItem> FerryPortbyId = new Dictionary<ulong, TsFerryItem>();
+
         public TsMapper(string gameDir, List<Mod> mods)
         {
             _gameDir = gameDir;
             _mods = mods;
             Sectors = new List<TsSector>();
             Localization = new LocalizationManager();
+        }
+
+        public Dictionary<ulong, TsPrefab> GetPrefabs()
+        {
+            return _prefabLookup;
         }
 
         private void ParseCityFiles()
@@ -208,10 +221,22 @@ namespace TsMap
                         if (key == "lanes_left[]")
                         {
                             roadLook.LanesLeft.Add(value);
+                            roadLook.IsLocal = (value.Equals("traffic_lane.road.local") || value.Equals("traffic_lane.road.local.tram") || value.Equals("traffic_lane.road.local.no_overtake"));
+                            roadLook.IsExpress = (value.Equals("traffic_lane.road.expressway") || value.Equals("traffic_lane.road.divided"));
+                            roadLook.IsHighway = (value.Equals("traffic_lane.road.motorway") || value.Equals("traffic_lane.road.motorway.low_density") ||
+                                                value.Equals("traffic_lane.road.freeway") || value.Equals("traffic_lane.road.freeway.low_density") ||
+                                                value.Equals("traffic_lane.road.divided"));
+                            roadLook.IsNoVehicles = (value.Equals("traffic_lane.no_vehicles"));
                         }
                         else if (key == "lanes_right[]")
                         {
                             roadLook.LanesRight.Add(value);
+                            roadLook.IsLocal = (value.Equals("traffic_lane.road.local") || value.Equals("traffic_lane.road.local.tram") || value.Equals("traffic_lane.road.local.no_overtake"));
+                            roadLook.IsExpress = (value.Equals("traffic_lane.road.expressway") || value.Equals("traffic_lane.road.divided"));
+                            roadLook.IsHighway = (value.Equals("traffic_lane.road.motorway") || value.Equals("traffic_lane.road.motorway.low_density") ||
+                                                value.Equals("traffic_lane.road.freeway") || value.Equals("traffic_lane.road.freeway.low_density") ||
+                                                value.Equals("traffic_lane.road.divided"));
+                            roadLook.IsNoVehicles = (value.Equals("traffic_lane.no_vehicles"));
                         }
                         else if (key == "road_offset")
                         {
@@ -249,6 +274,12 @@ namespace TsMap
 
                 TsFerryConnection conn = null;
 
+                ulong startPortToken = 0;
+                ulong endPortToken = 0;
+                int price = 0;
+                int time = 0;
+                int distance = 0;
+
                 foreach (var line in lines)
                 {
                     var (validLine, key, value) = SiiHelper.ParseLine(line);
@@ -274,27 +305,69 @@ namespace TsMap
                                 var z = float.Parse(values[2], CultureInfo.InvariantCulture);
                                 conn.AddRotation(index, Math.Atan2(z, x));
                             }
+
                         }
 
                         if (key == "ferry_connection")
                         {
                             var portIds = value.Split('.');
+
+                            // StartPortToken = ScsToken.StringToToken(portIds[1]),
+                            // EndPortToken = ScsToken.StringToToken(portIds[2].TrimEnd('{').Trim())
+
+                            startPortToken = ScsToken.StringToToken(portIds[1]);
+                            endPortToken = ScsToken.StringToToken(portIds[2].TrimEnd('{').Trim());
+
                             conn = new TsFerryConnection
                             {
-                                StartPortToken = ScsToken.StringToToken(portIds[1]),
-                                EndPortToken = ScsToken.StringToToken(portIds[2].TrimEnd('{').Trim())
+                                StartPortToken = startPortToken,
+                                EndPortToken = endPortToken,
+                                Price = price,
+                                Time = time,
+                                Distance = distance
                             };
+                        }
+
+                        if (key.Contains("price"))
+                        {
+                            price = Int32.Parse(value);
+                        }
+
+                        if (key.Contains("time"))
+                        {
+                            time = Int32.Parse(value);
+                        }
+
+                        if (key.Contains("distance"))
+                        {
+                            distance = Int32.Parse(value);
                         }
                     }
 
                     if (!line.Contains("}") || conn == null) continue;
-
-                    var existingItem = _ferryConnectionLookup.FirstOrDefault(item =>
-                        (item.StartPortToken == conn.StartPortToken && item.EndPortToken == conn.EndPortToken) ||
-                        (item.StartPortToken == conn.EndPortToken && item.EndPortToken == conn.StartPortToken)); // Check if connection already exists
-                    if (existingItem == null) _ferryConnectionLookup.Add(conn);
-                    conn = null;
                 }
+
+                var oldCon = conn;
+                conn = new TsFerryConnection
+                {
+                    StartPortToken = startPortToken,
+                    EndPortToken = endPortToken,
+                    Price = price,
+                    Time = time,
+                    Distance = distance
+                };
+                if (oldCon != null)
+                {
+                    oldCon.Connections.ForEach(i =>
+                    {
+                        conn.Connections.Add(i);
+                    });
+                }
+
+                var existingItem = FerryConnectionLookup.FirstOrDefault(item =>
+                    (item.StartPortToken == conn.StartPortToken && item.EndPortToken == conn.EndPortToken) ||
+                    (item.StartPortToken == conn.EndPortToken && item.EndPortToken == conn.StartPortToken)); // Check if connection already exists
+                if (existingItem == null) FerryConnectionLookup.Add(conn);
             }
         }
 
@@ -356,7 +429,7 @@ namespace TsMap
 
             startTime = DateTime.Now.Ticks;
             ParseFerryConnections();
-            Logger.Instance.Info($"Loaded {_ferryConnectionLookup.Count} ferry connections in {(DateTime.Now.Ticks - startTime) / TimeSpan.TicksPerMillisecond}ms");
+            Logger.Instance.Info($"Loaded {FerryConnectionLookup.Count} ferry connections in {(DateTime.Now.Ticks - startTime) / TimeSpan.TicksPerMillisecond}ms");
         }
 
         /// <summary>
@@ -397,6 +470,389 @@ namespace TsMap
         }
 
         /// <summary>
+        /// Loads navigation inside TsItem objects
+        /// </summary>
+        private void LoadNavigation()
+        {
+            Logger.Instance.Info("=> " + Prefabs.Count + " prefabs");
+            foreach (var prefab in Prefabs)
+            {
+                Logger.Instance.Info("=> => " + prefab.Uid + " = " + prefab.Nodes.Count + " nodes");
+                foreach (var nodeStr in prefab.Nodes)
+                {
+                    var node = GetNodeByUid(nodeStr);
+                    TsItem.TsItem road = null;
+                    TsNode precnode = node;
+                    TsItem.TsItem precitem = prefab;
+                    TsNode nextnode;
+                    TsItem.TsItem nextitem;
+                    List<TsItem.TsItem> roads = new List<TsItem.TsItem>();
+                    var totalLength = 0.0f;
+                    if (node.ForwardItem != null && node.ForwardItem.Type == TsItemType.Road)
+                    {
+                        road = node.ForwardItem;
+                    }
+                    else if (node.BackwardItem != null && node.BackwardItem.Type == TsItemType.Road)
+                    {
+                        road = node.BackwardItem;
+                    }
+                    if (road != null)
+                    {
+                        int direction = 0;
+                        if (road.EndNodeUid == node.Uid) direction = 1;
+                        while (road != null && road.Type != TsItemType.Prefab && !road.Hidden)
+                        {
+                            var length = (float)Math.Sqrt(Math.Pow(GetNodeByUid(road.StartNodeUid).X - GetNodeByUid(road.EndNodeUid).X, 2) + Math.Pow(GetNodeByUid(road.StartNodeUid).Z - GetNodeByUid(road.EndNodeUid).Z, 2));
+                            TsRoadItem roadObj = (TsRoadItem)road;
+                            totalLength += length / roadObj.RoadLook.GetWidth();
+                            /*if (roadObj.RoadLook.IsHighway) totalLength += (length / 2) / roadObj.RoadLook.GetWidth();
+                            else if (roadObj.RoadLook.IsLocal) totalLength += (length / 1.75f) / roadObj.RoadLook.GetWidth();
+                            else if (roadObj.RoadLook.IsExpress) totalLength += (length / 1.25f) / roadObj.RoadLook.GetWidth();
+                            else length += length * 2;*/
+                            roads.Add(road);
+                            if (GetNodeByUid(road.StartNodeUid) == precnode)
+                            {
+                                nextnode = GetNodeByUid(road.EndNodeUid);
+                                precnode = GetNodeByUid(road.EndNodeUid);
+                            }
+                            else
+                            {
+                                nextnode = GetNodeByUid(road.StartNodeUid);
+                                precnode = GetNodeByUid(road.StartNodeUid);
+                            }
+                            if (nextnode.BackwardItem == road || nextnode.BackwardItem == precitem)
+                            {
+                                nextitem = nextnode.ForwardItem;
+                                precitem = nextnode.ForwardItem;
+                            }
+                            else
+                            {
+                                nextitem = nextnode.BackwardItem;
+                                precitem = nextnode.BackwardItem;
+                            }
+                            road = nextitem;
+                        }
+                        if (road != null && !road.Hidden)
+                        {
+                            TsPrefabItem prevPrefab = (TsPrefabItem)prefab;
+                            TsPrefabItem nextPrefab = (TsPrefabItem)road;
+                            TsRoadLook look = ((TsRoadItem)roads.LastOrDefault()).RoadLook;
+                            if (prevPrefab.Hidden || nextPrefab.Hidden) continue;
+                            if (prevPrefab.Navigation.ContainsKey(nextPrefab) == false && (look.IsBidirectional() || direction == 0))
+                            {
+                                prevPrefab.Navigation.Add(nextPrefab, new Tuple<float, List<TsItem.TsItem>>(totalLength, roads));
+                            }
+                            if (nextPrefab.Navigation.ContainsKey(prevPrefab) == false && (look.IsBidirectional() || direction == 1))
+                            {
+                                var reverse = new List<TsItem.TsItem>(roads);
+                                reverse.Reverse();
+                                nextPrefab.Navigation.Add(prevPrefab, new Tuple<float, List<TsItem.TsItem>>(totalLength, reverse));
+                            }
+                        }
+                    }
+                    else if (node.ForwardItem != null && node.BackwardItem != null)
+                    {
+                        TsPrefabItem forwardPrefab = (TsPrefabItem)node.ForwardItem;
+                        TsPrefabItem backwardPrefab = (TsPrefabItem)node.BackwardItem;
+                        if (forwardPrefab.Hidden || backwardPrefab.Hidden) continue;
+                        if (forwardPrefab.Navigation.ContainsKey(backwardPrefab) == false)
+                        {
+                            forwardPrefab.Navigation.Add(backwardPrefab, new Tuple<float, List<TsItem.TsItem>>(0, null));
+                        }
+                        if (backwardPrefab.Navigation.ContainsKey(forwardPrefab) == false)
+                        {
+                            backwardPrefab.Navigation.Add(forwardPrefab, new Tuple<float, List<TsItem.TsItem>>(0, null));
+                        }
+                    }
+
+                }
+            }
+
+            Dictionary<ulong, TsPrefabItem> ferryToPrefab = new Dictionary<ulong, TsPrefabItem>();
+            foreach (var port in FerryConnections)
+            {
+                float min = float.MaxValue;
+                TsPrefabItem closerPrefab = null;
+                foreach (var prefab in Prefabs)
+                {
+                    float distance = (float)Math.Sqrt(Math.Pow(port.X - prefab.X, 2) + Math.Pow(port.Z - prefab.Z, 2));
+                    if (distance < min && prefab.Navigation.Count > 1 && !prefab.Hidden)
+                    {
+                        min = distance;
+                        closerPrefab = prefab;
+                    }
+                }
+                ferryToPrefab[port.FerryPortId] = closerPrefab;
+            }
+            foreach (var port in FerryConnections)
+            {
+                foreach (var connection in LookupFerryConnection(port.FerryPortId))
+                {
+                    var ports = new List<TsItem.TsItem>();
+                    ports.Add(FerryPortbyId[connection.StartPortToken]);
+                    ports.Add(FerryPortbyId[connection.EndPortToken]);
+                    ferryToPrefab[connection.StartPortToken].Navigation.Add(ferryToPrefab[connection.EndPortToken], new Tuple<float, List<TsItem.TsItem>>(connection.Distance, ports));
+                    ports.Reverse();
+                    ferryToPrefab[connection.EndPortToken].Navigation.Add(ferryToPrefab[connection.StartPortToken], new Tuple<float, List<TsItem.TsItem>>(connection.Distance, ports));
+                }
+            }
+        }
+
+        /// <summary>
+        /// Calculate path between two prefabs with Dijkstra's shortest path algorithm (Needs improvement with A* Algorithm)
+        /// </summary>
+        private void CalculatePath(TsPrefabItem Start, TsPrefabItem End)
+        {
+            Dictionary<TsPrefabItem, Tuple<float, TsPrefabItem>> nodesToWalk = new Dictionary<TsPrefabItem, Tuple<float, TsPrefabItem>>();
+            Dictionary<TsPrefabItem, Tuple<float, TsPrefabItem>> walkedNodes = new Dictionary<TsPrefabItem, Tuple<float, TsPrefabItem>>();
+
+            foreach (var node in Prefabs)
+            {
+                nodesToWalk.Add(node, new Tuple<float, TsPrefabItem>(float.MaxValue, null));
+            }
+
+            if (!nodesToWalk.ContainsKey((TsPrefabItem)Start)) return;
+            if (!nodesToWalk.ContainsKey((TsPrefabItem)End)) return;
+
+            nodesToWalk[Start] = new Tuple<float, TsPrefabItem>(0, null);
+
+            var s1start = DateTime.Now.Ticks;
+
+            // Walk all nodes
+            while (walkedNodes.Count != nodesToWalk.Count)
+            {
+                // Get node that has been walked the least
+                float distanceWalked = float.MaxValue;
+                TsPrefabItem toWalk = null;
+                foreach (var node in nodesToWalk)
+                {
+                    var dTmp = node.Value.Item1;
+                    if (distanceWalked > dTmp)
+                    {
+                        distanceWalked = dTmp;
+                        toWalk = node.Key;
+                    }
+                }
+                // Break if not found
+                if (toWalk == null) break;
+
+                // Add to walked nodes list, remove from nodes to walk list
+                walkedNodes[toWalk] = nodesToWalk[toWalk];
+                nodesToWalk.Remove(toWalk);
+
+                // Break if we reached the end
+                if (toWalk.Uid == End.Uid) break;
+
+                // Get weight (distance)
+                var currentWeight = walkedNodes[toWalk].Item1;
+
+                foreach (var jump in toWalk.Navigation)
+                {
+                    var newWeight = jump.Value.Item1 + currentWeight;
+                    TsPrefabItem newNode = jump.Key;
+
+                    if (walkedNodes[toWalk].Item2 != null)
+                    {
+                        TsPrefabItem precPrefab = walkedNodes[toWalk].Item2;
+                        TsPrefabItem middlePrefab = toWalk;
+                        List<TsItem.TsItem> precRoad = null;
+                        while (precRoad == null && precPrefab != null)
+                        {
+                            precRoad = precPrefab.Navigation[middlePrefab].Item2;
+                            middlePrefab = precPrefab;
+                            precPrefab = walkedNodes[precPrefab].Item2;
+                        }
+                        var nextRoad = toWalk.Navigation[newNode].Item2;
+                        if (precRoad != null && nextRoad != null && (precRoad.Count != 0 && nextRoad.Count != 0)
+                            && precRoad.LastOrDefault() is TsRoadItem && nextRoad[0] is TsRoadItem)
+                        {
+                            var result = SetInternalRoutePrefab((TsRoadItem)precRoad.LastOrDefault(), (TsRoadItem)nextRoad[0]);
+                            if (!result.Item1) continue;
+                            else newWeight += result.Item2;
+                        }
+                    }
+
+                    if (!walkedNodes.ContainsKey(newNode) && nodesToWalk[newNode].Item1 > newWeight) nodesToWalk[newNode] = new Tuple<float, TsPrefabItem>(newWeight, toWalk);
+                }
+            }
+
+            var s1end = DateTime.Now.Ticks - s1start;
+            Logger.Instance.Info(">> S1: " + s1end / TimeSpan.TicksPerMillisecond);
+            var s2start = DateTime.Now.Ticks;
+
+            TsPrefabItem route = End;
+
+            while (route != null)
+            {
+                TsPrefabItem gotoNew;
+                if (walkedNodes.ContainsKey(route)) gotoNew = walkedNodes[route].Item2;
+                else gotoNew = nodesToWalk[route].Item2;
+
+                if (gotoNew == null) break;
+                if (gotoNew.Navigation.ContainsKey(route) && gotoNew.Navigation[route].Item2 != null)
+                {
+                    if (gotoNew.Navigation[route].Item2.Count == 2 && gotoNew.Navigation[route].Item2[0] is TsFerryItem && gotoNew.Navigation[route].Item2[1] is TsFerryItem)
+                    {
+                        var startPort = (TsFerryItem)gotoNew.Navigation[route].Item2[0];
+                        var endPort = (TsFerryItem)gotoNew.Navigation[route].Item2[1];
+                        if (!RouteFerryPorts.ContainsKey(startPort)) RouteFerryPorts.Add(startPort, endPort);
+                    }
+                    else
+                    {
+                        for (int i = gotoNew.Navigation[route].Item2.Count - 1; i >= 0; i--)
+                        {
+                            RouteRoads.Add((TsRoadItem)gotoNew.Navigation[route].Item2[i]);
+                        }
+                    }
+                }
+
+                route = gotoNew;
+            }
+            var s2end = DateTime.Now.Ticks - s2start;
+            Logger.Instance.Info(">> S2: "+ s2end / TimeSpan.TicksPerMillisecond);
+
+            RouteRoads.Reverse();
+        }
+
+        /// <summary>
+        /// Even if prefabs roads are already been calculated these could be dirty so it recalculate them using the roads
+        /// NEEDS IMPROVEMENT
+        /// </summary>
+        public void CalculatePrefabsPath()
+        {
+            RoutePrefabs.Clear();
+            PrefabNav.Clear();
+            for (int i = 0; i < RouteRoads.Count - 1; i++)
+            {
+                SetInternalRoutePrefab(RouteRoads[i], RouteRoads[i + 1]);
+            }
+        }
+
+        /// <summary>
+        /// Add Items in Items Dictionary
+        /// </summary>
+        private void SetItems()
+        {
+            foreach (var item in Roads) Items.Add(item.Uid, item);
+            foreach (var item in Prefabs) Items.Add(item.Uid, item);
+            foreach (var item in Cities) Items.Add(item.Uid, item);
+            foreach (var item in MapOverlays) Items.Add(item.Uid, item);
+            foreach (var item in FerryConnections) Items.Add(item.Uid, item);
+            foreach (var item in Companies) Items.Add(item.Uid, item);
+        }
+
+        /// <summary>
+        /// Set ForwardItem and BackwardItem in TsNodes
+        /// </summary>
+        private void SetForwardBackward()
+        {
+            foreach (var node in Nodes)
+            {
+                TsItem.TsItem item = null;
+                if (Items.TryGetValue(node.Value.ForwardItemUID, out item))
+                {
+                    node.Value.ForwardItem = item;
+                }
+                item = null;
+                if (Items.TryGetValue(node.Value.BackwardItemUID, out item))
+                {
+                    node.Value.BackwardItem = item;
+                }
+
+            }
+        }
+
+        /// <summary>
+        /// Given two roads it search for a path that are inside prefabs between them using a DFS search
+        /// </summary>
+        private Tuple<bool, float> SetInternalRoutePrefab(TsRoadItem Start, TsRoadItem End)
+        {
+            TsNode startNode = null;
+            Dictionary<TsPrefabItem, bool> visited = new Dictionary<TsPrefabItem, bool>();
+            Stack<List<Tuple<TsNode, TsPrefabItem>>> prefabsToCheck = new Stack<List<Tuple<TsNode, TsPrefabItem>>>();
+            List<List<Tuple<TsNode, TsPrefabItem>>> possiblePaths = new List<List<Tuple<TsNode, TsPrefabItem>>>();
+            if (GetNodeByUid(Start.StartNodeUid).BackwardItem.Type == TsItemType.Prefab || GetNodeByUid(Start.StartNodeUid).ForwardItem.Type == TsItemType.Prefab)
+            {
+                startNode = GetNodeByUid(Start.StartNodeUid);
+                var prefab = startNode.BackwardItem.Type == TsItemType.Prefab ? (TsPrefabItem)startNode.BackwardItem : (TsPrefabItem)startNode.ForwardItem;
+                var temp = new List<Tuple<TsNode, TsPrefabItem>>();
+                temp.Add(new Tuple<TsNode, TsPrefabItem>(startNode, prefab));
+                prefabsToCheck.Push(temp);
+            }
+            if (GetNodeByUid(Start.EndNodeUid).BackwardItem.Type == TsItemType.Prefab || GetNodeByUid(Start.EndNodeUid).ForwardItem.Type == TsItemType.Prefab)
+            {
+                startNode = GetNodeByUid(Start.EndNodeUid);
+                var prefab = startNode.BackwardItem.Type == TsItemType.Prefab ? (TsPrefabItem)startNode.BackwardItem : (TsPrefabItem)startNode.ForwardItem;
+                var temp = new List<Tuple<TsNode, TsPrefabItem>>();
+                temp.Add(new Tuple<TsNode, TsPrefabItem>(startNode, prefab));
+                prefabsToCheck.Push(temp);
+            }
+            while (prefabsToCheck.Count != 0)
+            {
+                List<Tuple<TsNode, TsPrefabItem>> actualPath = prefabsToCheck.Pop();
+                Tuple<TsNode, TsPrefabItem> actualPrefab = actualPath.LastOrDefault();
+
+                if (visited.ContainsKey(actualPrefab.Item2)) continue;
+                visited[actualPrefab.Item2] = true;
+
+                var lastNode = actualPrefab.Item2.NodeIteminPrefab(this, End);
+                if (lastNode != null)
+                {
+                    actualPath.Add(new Tuple<TsNode, TsPrefabItem>(lastNode, null));
+                    possiblePaths.Add(actualPath);
+                    continue;
+                }
+
+                foreach (var prefab in actualPrefab.Item2.NodePrefabinPrefab(this))
+                {
+                    var newPath = new List<Tuple<TsNode, TsPrefabItem>>(actualPath);
+                    newPath.Add(prefab);
+                    prefabsToCheck.Push(newPath);
+                }
+            }
+
+            var returnValue = new Tuple<bool, float>(false, 0);
+            foreach (var path in possiblePaths)
+            {
+                bool success = true;
+                float totalLength = 0.0f;
+                for (int i = 0; i < path.Count - 1; i++)
+                {
+                    var tempData = AddPrefabPath(path[i].Item2, path[i].Item1, path[i + 1].Item1);
+                    if (!tempData.Item1)
+                    {
+                        success = false;
+                        break;
+                    }
+                    totalLength += tempData.Item2;
+                }
+                if (success && path.Count >= 1) return new Tuple<bool, float>(true, totalLength / Start.RoadLook.GetWidth());
+            }
+            return returnValue;
+        }
+
+        public Tuple<bool, float> AddPrefabPath(TsPrefabItem prefab, TsNode startNode, TsNode endNode)
+        {
+            //Optional - some prefabs, like gas stastions will be completely selected instead of selecting a sigle road
+            //if (prefab.Prefab.PrefabNodes.Count <= 2) {
+            //    RoutePrefabs.Add(prefab);
+            //    return true;
+            //}
+            var returnValue = new Tuple<bool, float>(false, 0);
+            var s = prefab.GetNearestNode(this, startNode, 0);
+            var e = prefab.GetNearestNode(this, endNode, 1);
+            if (s.id == -1 || e.id == -1) return returnValue;
+            var key = new Tuple<TsPrefabNode, TsPrefabNode>(s, e);
+            if (prefab.Prefab.NavigationRoutes.ContainsKey(key))
+            {
+                PrefabNav[prefab] = prefab.Prefab.NavigationRoutes[key].Item1;
+                returnValue = new Tuple<bool, float>(true, prefab.Prefab.NavigationRoutes[key].Item2);
+            }
+            return returnValue;
+            // TODO: Add the possibility to return also the weight of the path to be used in Dijkstra's Algorithm
+        }
+
+        /// <summary>
         /// Parse through all .scs files and retrieve all necessary files
         /// </summary>
         public void Parse()
@@ -432,19 +888,65 @@ namespace TsMap
             Sectors = _sectorFiles.Select(file => new TsSector(this, file)).ToList();
             Sectors.ForEach(sec => sec.Parse());
             Sectors.ForEach(sec => sec.ClearFileData());
+            SetItems();
+            SetForwardBackward();
             Logger.Instance.Info($"It took {(DateTime.Now.Ticks - preMapParseTime) / TimeSpan.TicksPerMillisecond} ms to parse all (*.base) files");
 
-            var invalidFerryConnections = _ferryConnectionLookup.Where(x => x.StartPortLocation == PointF.Empty || x.EndPortLocation == PointF.Empty).ToList();
+            var invalidFerryConnections = FerryConnectionLookup.Where(x => x.StartPortLocation == PointF.Empty || x.EndPortLocation == PointF.Empty).ToList();
             foreach (var invalidFerryConnection in invalidFerryConnections)
             {
-                _ferryConnectionLookup.Remove(invalidFerryConnection);
+                FerryConnectionLookup.Remove(invalidFerryConnection);
                 Logger.Instance.Debug($"Ignored ferry connection " +
                     $"'{ScsToken.TokenToString(invalidFerryConnection.StartPortToken)}-{ScsToken.TokenToString(invalidFerryConnection.EndPortToken)}' " +
                     $"due to not having Start/End location set.");
             }
 
             Logger.Instance.Info($"Loaded {_overlayCache.Count} overlays");
-            Logger.Instance.Info($"It took {(DateTime.Now.Ticks - startTime) / TimeSpan.TicksPerMillisecond} ms to fully load.");
+            //Logger.Instance.Info($"It took {(DateTime.Now.Ticks - startTime) / TimeSpan.TicksPerMillisecond} ms to fully load.");
+
+            Logger.Instance.Info("Loading navigation data...");
+            LoadNavigation();
+
+            //while (Prefabs[firstP].Hidden || Prefabs[firstP].Navigation.Count < 1) firstP++;
+            //while (Prefabs[secondP].Hidden || Prefabs[secondP].Navigation.Count < 1) secondP++;
+            Logger.Instance.Info("Starting Calculating Path...");
+            //CalculatePath(Prefabs[firstP], Prefabs[secondP]);
+
+            TsPrefabItem firstPfItm = null;
+            foreach (var i in Prefabs)
+            {
+                var x = i.X - -10109.01;
+                var z = i.Z - 45631.55;
+                if ((x <= 1 && x >= -1) && (z <= 1 && z >= -1))
+                {
+                    firstPfItm = i;
+                    break;
+                }
+            }
+
+            TsPrefabItem secondPfItm = null;
+            foreach (var i in Prefabs)
+            {
+                var x = i.X - -8042.469;
+                var z = i.Z - -44051.7;
+                if ((x <= 10 && x >= -10) && (z <= 10 && z >= -10))
+                {
+                    secondPfItm = i;
+                    break;
+                }
+            }
+
+            CalculatePath(firstPfItm, secondPfItm);
+            Logger.Instance.Info("Starting Calculating Path inside Prefabs...");
+            CalculatePrefabsPath();
+
+            Logger.Instance.Info("Selected Roads: " + RouteRoads.Count + " - Selected Prefabs: " + PrefabNav.Count);
+            Logger.Instance.Info("Start Location: X -> " + firstPfItm.X + ";Z -> " + firstPfItm.Z);
+            Logger.Instance.Info("End Location: X -> " + secondPfItm.X + ";Z -> " + secondPfItm.Z);
+            Logger.Instance.Info($"It took {(DateTime.Now.Ticks - preMapParseTime) / TimeSpan.TicksPerMillisecond} ms to parse all (*.base)" +
+                    $" map files and {(DateTime.Now.Ticks - startTime) / TimeSpan.TicksPerMillisecond} ms total.");
+
+
         }
 
         public void ExportInfo(ExportFlags exportFlags, string exportPath)
@@ -480,7 +982,7 @@ namespace TsMap
                 if (exportFlags.IsActive(ExportFlags.CityLocalizedNames))
                 {
                     cityJObj["LocalizedNames"] = new JObject();
-                    foreach(var locale in Localization.GetLocales())
+                    foreach (var locale in Localization.GetLocales())
                     {
                         var locCityName = Localization.GetLocaleValue(city.City.LocalizationToken, locale);
                         if (locCityName != null)
@@ -658,7 +1160,7 @@ namespace TsMap
                 if (prefab.Prefab.PrefabNodes == null) continue;
                 var mapPointOrigin = prefab.Prefab.PrefabNodes[prefab.Origin];
 
-                var rot = (float) (originNode.Rotation - Math.PI -
+                var rot = (float)(originNode.Rotation - Math.PI -
                                    Math.Atan2(mapPointOrigin.RotZ, mapPointOrigin.RotX) + Math.PI / 2);
 
                 var prefabStartX = originNode.X - mapPointOrigin.X;
@@ -850,12 +1352,12 @@ namespace TsMap
 
         public List<TsFerryConnection> LookupFerryConnection(ulong ferryPortId)
         {
-            return _ferryConnectionLookup.Where(item => item.StartPortToken == ferryPortId).ToList();
+            return FerryConnectionLookup.Where(item => item.StartPortToken == ferryPortId).ToList();
         }
 
         public void AddFerryPortLocation(ulong ferryPortId, float x, float z)
         {
-            var ferry = _ferryConnectionLookup.Where(item => item.StartPortToken == ferryPortId || item.EndPortToken == ferryPortId);
+            var ferry = FerryConnectionLookup.Where(item => item.StartPortToken == ferryPortId || item.EndPortToken == ferryPortId);
             foreach (var connection in ferry)
             {
                 connection.SetPortLocation(ferryPortId, x, z);

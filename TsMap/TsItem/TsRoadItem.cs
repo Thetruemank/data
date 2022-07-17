@@ -12,7 +12,7 @@ namespace TsMap.TsItem
         private const int StampBlockSize = 0x18;
         public TsRoadLook RoadLook { get; private set; }
 
-        private List<PointF> _points;
+        public List<PointF> _points;
 
         public bool IsSecret { get; private set; }
 

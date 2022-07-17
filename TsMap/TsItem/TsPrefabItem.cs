@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using TsMap.Common;
 using TsMap.Helpers;
@@ -8,6 +9,7 @@ namespace TsMap.TsItem
 {
     public class TsPrefabItem : TsItem
     {
+
         private const int NodeLookBlockSize = 0x3A;
         private const int NodeLookBlockSize825 = 0x38;
         private const int PrefabVegetaionBlockSize = 0x20;
@@ -34,6 +36,7 @@ namespace TsMap.TsItem
 
         public TsPrefabItem(TsSector sector, int startOffset) : base(sector, startOffset)
         {
+            Navigation = new Dictionary<TsPrefabItem, Tuple<float, List<TsItem>>>();
             Valid = true;
             _looks = new List<TsPrefabLook>();
             Nodes = new List<ulong>();
@@ -247,6 +250,61 @@ namespace TsMap.TsItem
             fileOffset += 0x02 + nodeCount * 0x0C + 0x08; // 0x02(origin & padding) + nodeLooks + 0x08(padding2)
 
             BlockSize = fileOffset - startOffset;
+        }
+
+        public TsPrefabNode GetNearestNode(TsMapper _mapper, TsNode item, int mode)
+        {
+            // Mode: 0 -> Only Input Points ; 1 -> Only Output Points ; whatever else -> All Points
+            TsPrefabNode node = default(TsPrefabNode);
+            node.id = -1;
+            float min = float.MaxValue;
+            var originNode = _mapper.GetNodeByUid(this.Nodes[0]);
+            var mapPointOrigin = this.Prefab.PrefabNodes[this.Origin];
+            var prefabStartX = originNode.X - mapPointOrigin.X;
+            var prefabStartZ = originNode.Z - mapPointOrigin.Z;
+            var rot = (float)(originNode.Rotation - Math.PI - Math.Atan2(mapPointOrigin.RotZ, mapPointOrigin.RotX) + Math.PI / 2);
+            foreach (var nod in this.Prefab.PrefabNodes)
+            {
+                if (nod.InputPoints.Count <= 0 && mode == 0) continue;
+                if (nod.OutputPoints.Count <= 0 && mode == 1) continue;
+                var newPoint = RenderHelper.RotatePoint(prefabStartX + nod.X, prefabStartZ + nod.Z, rot, originNode.X, originNode.Z);
+                float dist = (float)Math.Sqrt(Math.Pow(item.X - (newPoint.X), 2) + Math.Pow(item.Z - (newPoint.Y), 2));
+                if (dist < min && dist < 0.2)
+                {
+                    node = nod;
+                    min = dist;
+                }
+            }
+            return node;
+        }
+
+        public TsNode NodeIteminPrefab(TsMapper _mapper, TsItem item)
+        {
+            foreach (var nodePId in this.Nodes)
+            {
+                var nodeP = _mapper.GetNodeByUid(nodePId);
+                if (nodeP.ForwardItem == item) return nodeP;
+                if (nodeP.BackwardItem == item) return nodeP;
+            }
+            return null;
+        }
+
+        public List<Tuple<TsNode, TsPrefabItem>> NodePrefabinPrefab(TsMapper _mapper)
+        {
+            List<Tuple<TsNode, TsPrefabItem>> prefabs = new List<Tuple<TsNode, TsPrefabItem>>();
+            foreach (var nodePId in this.Nodes)
+            {
+                var nodeP = _mapper.GetNodeByUid(nodePId);
+                if (nodeP.ForwardItem != null && nodeP.ForwardItem.Type == TsItemType.Prefab && nodeP.ForwardItem != this) prefabs.Add(new Tuple<TsNode, TsPrefabItem>(nodeP, (TsPrefabItem)nodeP.ForwardItem));
+                if (nodeP.BackwardItem != null && nodeP.BackwardItem.Type == TsItemType.Prefab && nodeP.BackwardItem != this) prefabs.Add(new Tuple<TsNode, TsPrefabItem>(nodeP, (TsPrefabItem)nodeP.BackwardItem));
+            }
+            return prefabs;
+        }
+
+        // Can be useful for A* Algorithm
+        public float HeuristicDistance(TsItem item)
+        {
+            return Math.Abs(this.X - item.X) + Math.Abs(this.Z - item.Z);
         }
     }
 }

@@ -31,6 +31,7 @@ namespace TsMap.Canvas
             if (MapOverlaysCheckBox.Checked) renderFlags |= RenderFlags.MapOverlays;
             if (FerryConnectionsCheckBox.Checked) renderFlags |= RenderFlags.FerryConnections;
             if (CityNamesCheckBox.Checked) renderFlags |= RenderFlags.CityNames;
+            renderFlags |= RenderFlags.TextOverlay;
             UpdateItemVisibility?.Invoke(renderFlags);
         }
     }
