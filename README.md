@@ -1,6 +1,8 @@
 # Euro Truck Simulator 2 / American Truck Simulator Map Renderer
 
-This Application reads ATS/ETS2 files to draw roads, prefabs, map overlays, ferry lines and city names.
+This Application reads ATS/ETS2 files to draw roads, prefabs, map overlays, ferry lines and city names. It can also generate a route between two prefabs. This is an updated fork of [edoaxyz/ts-map](https://github.com/edoaxyz/ts-map).
+
+To change the generated route you need to adjust the coordinates in TsMapper.cs line 916. This is not very user friendly, but that's mainly because I just needed a working proof of concept.
 
 ![Preview of the map](/docs/preview.jpg "Preview of the map")
 
