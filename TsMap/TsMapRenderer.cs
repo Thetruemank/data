@@ -23,7 +23,18 @@ namespace TsMap
             _mapper = mapper;
         }
 
+<<<<<<< HEAD
         private bool exported;
+=======
+        public static PointF RotatePoint(float x, float z, float angle, float rotX, float rotZ)
+        {
+            var s = Math.Sin(angle);
+            var c = Math.Cos(angle);
+            double newX = x - rotX;
+            double newZ = z - rotZ;
+            return new PointF((float) ((newX * c) - (newZ * s) + rotX), (float) ((newX * s) + (newZ * c) + rotZ));
+        }
+>>>>>>> d5c7e3d5c3abf745f5d0863649bf2f871f18fd36
 
         public void Render(Graphics g, Rectangle clip, float scale, PointF startPoint, MapPalette palette, RenderFlags renderFlags = RenderFlags.All)
         {
@@ -85,7 +96,60 @@ namespace TsMap
 
                     foreach (var conn in connections)
                     {
+<<<<<<< HEAD
                         if (conn.Connections.Count == 0) // no extra nodes -> straight line
+=======
+                        new PointF((conn.StartPortLocation.X - startX) * scaleX,
+                            (conn.StartPortLocation.Y - startY) * scaleY)
+                    };
+
+                    foreach (var connection in conn.connections)
+                    {
+                        newPoints.Add(new PointF((connection.X - startX) * scaleX, (connection.Y - startY) * scaleY));
+                    }
+                    newPoints.Add(new PointF((conn.EndPortLocation.X - startX) * scaleX, (conn.EndPortLocation.Y - startY) * scaleY));
+
+                    var color = _palette.FerryLines;
+                    if (_mapper.RouteFerryPorts.ContainsKey(_mapper.FerryPortbyId[conn.StartPortToken]) ||
+                         _mapper.RouteFerryPorts.ContainsKey(_mapper.FerryPortbyId[conn.EndPortToken])) {
+                        color = _palette.NavColor;
+                    }
+
+                    var pen = new Pen(color, 50 * scaleX) { DashPattern = new[] { 10f, 10f } };
+                    g.DrawCurve(pen, newPoints.ToArray());
+                }
+            }
+
+            var prefabs = _mapper.Prefabs.Where(item =>
+                    item.X >= startX - 1500 && item.X <= endX + 1500 && item.Z >= startY - 1500 &&
+                    item.Z <= endY + 1500 && !item.Hidden)
+                .ToList();
+
+            List<TsPrefabLook> drawingQueue = new List<TsPrefabLook>();
+
+            foreach (var prefabItem in prefabs) // TODO: Road Width
+            {
+                var originNode = _mapper.GetNodeByUid(prefabItem.Nodes[0]);
+                var mapPointOrigin = prefabItem.Prefab.PrefabNodes[prefabItem.Origin];
+
+                var rot = (float)(originNode.Rotation - Math.PI - Math.Atan2(mapPointOrigin.RotZ, mapPointOrigin.RotX) + Math.PI / 2);
+
+                var prefabStartX = originNode.X - mapPointOrigin.X;
+                var prefabStartZ = originNode.Z - mapPointOrigin.Z;
+
+                List<int> pointsDrawn = new List<int>();
+
+                for (var i = 0; i < prefabItem.Prefab.MapPoints.Count; i++)
+                {
+                    var mapPoint = prefabItem.Prefab.MapPoints[i];
+                    pointsDrawn.Add(i);
+                    
+                    if (mapPoint.LaneCount == -1) // non-road Prefab
+                    {
+                        Dictionary<int, PointF> polyPoints = new Dictionary<int, PointF>();
+                        var nextPoint = i;
+                        do
+>>>>>>> d5c7e3d5c3abf745f5d0863649bf2f871f18fd36
                         {
                             if (_mapper.RouteFerryPorts.ContainsKey(_mapper.FerryPortbyId[conn.StartPortToken]) ||
                              _mapper.RouteFerryPorts.ContainsKey(_mapper.FerryPortbyId[conn.EndPortToken]))
@@ -169,6 +233,7 @@ namespace TsMap
                     {
                         continue;
                     }
+<<<<<<< HEAD
 
                     var points = new List<PointF>();
 
@@ -376,7 +441,62 @@ namespace TsMap
                     foreach (var prefabLook in drawingQueue.OrderBy(p => p.ZIndex))
                     {
                         prefabLook.Draw(g);
+=======
+                    // This part is now made by prefab curves
+                    /*
+                    foreach (var neighbourPointIndex in mapPoint.Neighbours) // TODO: Fix connection between road segments
+                    {
+                    if (pointsDrawn.Contains(neighbourPointIndex)) continue;
+                    var neighbourPoint = prefabItem.Prefab.MapPoints[neighbourPointIndex];
+
+                    if ((mapPoint.Hidden || neighbourPoint.Hidden) && prefabItem.Prefab.PrefabNodes.Count + 1 <
+                        prefabItem.Prefab.MapPoints.Count) continue;
+
+                    var newPointStart = RotatePoint(prefabStartX + mapPoint.X,
+                        prefabStartZ + mapPoint.Z, rot, originNode.X, originNode.Z);
+
+                    var newPointEnd = RotatePoint(prefabStartX + neighbourPoint.X,
+                        prefabStartZ + neighbourPoint.Z, rot, originNode.X, originNode.Z);
+                    
+                    TsPrefabLook prefabLook = new TsPrefabRoadLook()
+                    {
+                        Color = _palette.PrefabRoad,
+                        ZIndex = 4,
+                        Width = 10f * scaleX,
+                    };
+
+                    prefabLook.AddPoint((newPointStart.X - startX) * scaleX, (newPointStart.Y - startY) * scaleY);
+                    prefabLook.AddPoint((newPointEnd.X - startX) * scaleX, (newPointEnd.Y - startY) * scaleY);
+
+                    drawingQueue.Add(prefabLook);
+>>>>>>> d5c7e3d5c3abf745f5d0863649bf2f871f18fd36
                     }
+                    */
+                }
+
+                for (int i = 0; i < prefabItem.Prefab.PrefabCurves.Count; i++)
+                {
+                    var newPointStart = RotatePoint(prefabStartX + prefabItem.Prefab.PrefabCurves[i].start_X, prefabStartZ + prefabItem.Prefab.PrefabCurves[i].start_Z, rot, originNode.X, originNode.Z);
+                    var newPointEnd = RotatePoint(prefabStartX + prefabItem.Prefab.PrefabCurves[i].end_X, prefabStartZ + prefabItem.Prefab.PrefabCurves[i].end_Z, rot, originNode.X, originNode.Z);
+                    var color = _palette.PrefabRoad;
+                    var zind = 4;
+
+                    if ((_mapper.PrefabNav.ContainsKey(prefabItem) && _mapper.PrefabNav.ContainsKey(prefabItem) && _mapper.PrefabNav[prefabItem].Contains(prefabItem.Prefab.PrefabCurves[i])) || _mapper.RoutePrefabs.Contains(prefabItem)) {
+                        color = _palette.NavColor;
+                        zind = 1000;
+                    }
+                        
+                    TsPrefabLook prefabLook = new TsPrefabRoadLook()
+                    {
+                        Color = color,
+                        Width = 10f * scaleX,
+                        ZIndex = zind
+                    };
+
+                    prefabLook.AddPoint((newPointStart.X - startX) * scaleX, (newPointStart.Y - startY) * scaleY);
+                    prefabLook.AddPoint((newPointEnd.X - startX) * scaleX, (newPointEnd.Y - startY) * scaleY);
+                    
+                    drawingQueue.Add(prefabLook);
                 }
 
                 prefabs.ForEach(p =>
@@ -401,7 +521,72 @@ namespace TsMap
 
                 foreach (var road in roads)
                 {
+<<<<<<< HEAD
                     if (road.IsSecret && !renderFlags.IsActive(RenderFlags.SecretRoads))
+=======
+                    var point = points[i];
+                    points[i] = new PointF((point.X - startX) * scaleX, (point.Y - startY) * scaleY);
+                }
+
+                var roadWidth = road.RoadLook.GetWidth() * scaleX;
+
+                var color = _palette.Road;
+                if (_mapper.RouteRoads.Contains(road)) color = _palette.NavColor;
+                
+                g.DrawCurve(new Pen(color, roadWidth), points.ToArray());
+            }
+
+
+            var cities = _mapper.Cities.Where(item =>
+                    item.X >= startX - 1500 && item.X <= endX + 1500 && item.Z >= startY - 1500 &&
+                    item.Z <= endY + 1500 && !item.Hidden)
+                .ToList();
+
+            foreach (var city in cities)
+            {
+                var cityFont = new Font("Arial", 80 * scaleX, FontStyle.Bold);
+                g.DrawString(city.CityName, cityFont, _palette.CityName, (city.X - startX) * scaleX, (city.Z - startY) * scaleY);
+            }
+
+            var overlays = _mapper.MapOverlays.Where(item =>
+                    item.X >= startX - 1500 && item.X <= endX + 1500 && item.Z >= startY - 1500 &&
+                    item.Z <= endY + 1500)
+                .ToList();
+
+            foreach (var overlayItem in overlays) // TODO: Scaling
+            {
+                Bitmap b = overlayItem.Overlay.GetBitmap();
+                if (b != null) g.DrawImage(b, (overlayItem.X - b.Width - startX) * scaleX, (overlayItem.Z - b.Height - startY) * scaleY,
+                    b.Width * 2 * scaleX, b.Height * 2 * scaleY);
+            }
+
+            var companies = _mapper.Companies.Where(item =>
+                    item.X >= startX - 1500 && item.X <= endX + 1500 && item.Z >= startY - 1500 &&
+                    item.Z <= endY + 1500)
+                .ToList();
+
+            foreach (var companyItem in companies) // TODO: Scaling
+            {
+                Bitmap b = companyItem.Overlay.GetBitmap();
+                if (b != null) g.DrawImage(b, (companyItem.X - startX) * scaleX, (companyItem.Z - startY) * scaleY, b.Width * scaleX, b.Height * scaleY);
+            }
+
+            foreach (var prefab in prefabs) // Draw all prefab overlays
+            {
+                var originNode = _mapper.GetNodeByUid(prefab.Nodes[0]);
+                var mapPointOrigin = prefab.Prefab.PrefabNodes[prefab.Origin];
+
+                var rot = (float)(originNode.Rotation - Math.PI - Math.Atan2(mapPointOrigin.RotZ, mapPointOrigin.RotX) + Math.PI / 2);
+
+                var prefabStartX = originNode.X - mapPointOrigin.X;
+                var prefabStartZ = originNode.Z - mapPointOrigin.Z;
+                foreach (var spawnPoint in prefab.Prefab.SpawnPoints)
+                {
+                    var newPoint = RotatePoint(prefabStartX + spawnPoint.X, prefabStartZ + spawnPoint.Z, rot,
+                        originNode.X, originNode.Z);
+
+                    switch (spawnPoint.Type)
+>>>>>>> d5c7e3d5c3abf745f5d0863649bf2f871f18fd36
                     {
                         continue;
                     }
