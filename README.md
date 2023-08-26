@@ -1,5 +1,9 @@
 # This repository has been made to support my main [application](https://github.com/Tumppi066/Euro-Truck-Simulator-2-Lane-Assist)
-# It might or might not be maintained, and I might or might not have managed to reach the goal!
+- The repo might or might not be maintained.
+- Currently tested with 1.48 and it does work
+- The description below will not be updated.
+- To use download Visual Studio with C# (.net) support and built the application.
+ - Then click the generate button and untoggle everything in the menu. Generate. The files will be in the ts-map-canvas/bin/debug/ folder
 
 # Euro Truck Simulator 2 / American Truck Simulator Map Renderer
 
