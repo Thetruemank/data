@@ -43,6 +43,10 @@ namespace TsMap
                 return;
             }
 
+            var dlcGuards = _mapper.GetDlcGuardsForCurrentGame();
+
+            var activeDlcGuards = dlcGuards.Where(x => x.Enabled).Select(x => x.Index).ToList();
+
             var centerX = startPoint.X;
             var centerY = startPoint.Y;
 
@@ -159,7 +163,7 @@ namespace TsMap
             {
                 var mapAreas = _mapper.MapAreas.Where(item =>
                         item.X >= startPoint.X - itemDrawMargin && item.X <= endPoint.X + itemDrawMargin && item.Z >= startPoint.Y - itemDrawMargin &&
-                        item.Z <= endPoint.Y + itemDrawMargin && !item.Hidden)
+                        item.Z <= endPoint.Y + itemDrawMargin && activeDlcGuards.Contains(item.DlcGuard))
                     .ToList();
 
 
@@ -192,7 +196,7 @@ namespace TsMap
             var prefabStartTime = DateTime.Now.Ticks;
             var prefabs = _mapper.Prefabs.Where(item =>
                     item.X >= startPoint.X - itemDrawMargin && item.X <= endPoint.X + itemDrawMargin && item.Z >= startPoint.Y - itemDrawMargin &&
-                    item.Z <= endPoint.Y + itemDrawMargin && !item.Hidden)
+                    item.Z <= endPoint.Y + itemDrawMargin && activeDlcGuards.Contains(item.DlcGuard))
                 .ToList();
 
             if (renderFlags.IsActive(RenderFlags.Prefabs))
@@ -396,7 +400,7 @@ namespace TsMap
             {
                 var roads = _mapper.Roads.Where(item =>
                         item.X >= startPoint.X - itemDrawMargin && item.X <= endPoint.X + itemDrawMargin && item.Z >= startPoint.Y - itemDrawMargin &&
-                        item.Z <= endPoint.Y + itemDrawMargin && !item.Hidden)
+                        item.Z <= endPoint.Y + itemDrawMargin && activeDlcGuards.Contains(item.DlcGuard))
                     .ToList();
 
                 foreach (var road in roads)
@@ -467,7 +471,7 @@ namespace TsMap
             {
                 var overlays = _mapper.MapOverlays.Where(item =>
                         item.X >= startPoint.X - itemDrawMargin && item.X <= endPoint.X + itemDrawMargin && item.Z >= startPoint.Y - itemDrawMargin &&
-                        item.Z <= endPoint.Y + itemDrawMargin && !item.Hidden)
+                        item.Z <= endPoint.Y + itemDrawMargin && activeDlcGuards.Contains(item.DlcGuard))
                     .ToList();
 
                 foreach (var overlayItem in overlays) // TODO: Scaling
@@ -488,7 +492,7 @@ namespace TsMap
             {
                 var companies = _mapper.Companies.Where(item =>
                         item.X >= startPoint.X - itemDrawMargin && item.X <= endPoint.X + itemDrawMargin && item.Z >= startPoint.Y - itemDrawMargin &&
-                        item.Z <= endPoint.Y + itemDrawMargin && !item.Hidden)
+                        item.Z <= endPoint.Y + itemDrawMargin && activeDlcGuards.Contains(item.DlcGuard))
                     .ToList();
 
                 foreach (var companyItem in companies) // TODO: Scaling
@@ -615,7 +619,7 @@ namespace TsMap
 
                 var triggers = _mapper.Triggers.Where(item =>
                         item.X >= startPoint.X - itemDrawMargin && item.X <= endPoint.X + itemDrawMargin && item.Z >= startPoint.Y - itemDrawMargin &&
-                        item.Z <= endPoint.Y + itemDrawMargin && !item.Hidden)
+                        item.Z <= endPoint.Y + itemDrawMargin && activeDlcGuards.Contains(item.DlcGuard))
                     .ToList();
 
                 foreach (var triggerItem in triggers) // TODO: Scaling
@@ -647,7 +651,7 @@ namespace TsMap
                 {
                     var viewpoints = _mapper.Viewpoints.Where(item =>
                             item.X >= startPoint.X - itemDrawMargin && item.X <= endPoint.X + itemDrawMargin && item.Z >= startPoint.Y - itemDrawMargin &&
-                            item.Z <= endPoint.Y + itemDrawMargin)
+                            item.Z <= endPoint.Y + itemDrawMargin && activeDlcGuards.Contains(item.DlcGuard))
                         .ToList();
 
                     foreach (var viewpoint in viewpoints)

@@ -73,6 +73,13 @@ namespace TsMap
             return _prefabLookup;
         }
 
+        public List<DlcGuard> GetDlcGuardsForCurrentGame()
+        {
+            return IsEts2
+                ? Consts.DefaultEts2DlcGuards
+                : Consts.DefaultAtsDlcGuards;
+        }
+
         private void ParseCityFiles()
         {
             var defDirectory = UberFileSystem.Instance.GetDirectory("def");

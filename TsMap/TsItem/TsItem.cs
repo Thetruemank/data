@@ -29,6 +29,8 @@ namespace TsMap.TsItem
 
         public uint Flags { get; }
 
+        public byte DlcGuard = 0;
+
         public Dictionary<TsPrefabItem, Tuple<float, List<TsItem>>> Navigation { get; set; }
 
         public TsItem(TsSector sector, int offset)
