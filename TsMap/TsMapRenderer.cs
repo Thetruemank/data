@@ -5,6 +5,7 @@ using System.Drawing.Drawing2D;
 using System.Linq;
 using TsMap.Common;
 using TsMap.Helpers.Logger;
+using TsMap.Map.Overlays;
 
 namespace TsMap
 {
@@ -89,17 +90,21 @@ namespace TsMap
                     {
                         if (conn.Connections.Count == 0) // no extra nodes -> straight line
                         {
-                            if (_mapper.RouteFerryPorts.ContainsKey(_mapper.FerryPortbyId[conn.StartPortToken]) ||
-                             _mapper.RouteFerryPorts.ContainsKey(_mapper.FerryPortbyId[conn.EndPortToken]))
+                            try
                             {
-                                ferryPen = new Pen(Brushes.Red, 50) { DashPattern = new[] { 10f, 10f } };
+                                if (_mapper.RouteFerryPorts.ContainsKey(_mapper.FerryPortbyId[conn.StartPortToken]) ||
+                                 _mapper.RouteFerryPorts.ContainsKey(_mapper.FerryPortbyId[conn.EndPortToken]))
+                                {
+                                    ferryPen = new Pen(Brushes.Red, 50) { DashPattern = new[] { 10f, 10f } };
+                                }
+                                else
+                                {
+                                    ferryPen = new Pen(palette.FerryLines, 50) { DashPattern = new[] { 10f, 10f } };
+                                }
+                                g.DrawLine(ferryPen, conn.StartPortLocation, conn.EndPortLocation);
+                                continue;
                             }
-                            else
-                            {
-                                ferryPen = new Pen(palette.FerryLines, 50) { DashPattern = new[] { 10f, 10f } };
-                            }
-                            g.DrawLine(ferryPen, conn.StartPortLocation, conn.EndPortLocation);
-                            continue;
+                            catch { continue;  }
                         }
 
                         var startYaw = Math.Atan2(conn.Connections[0].Z - conn.StartPortLocation.Y, // get angle of the start port to the first node
@@ -142,11 +147,16 @@ namespace TsMap
                         bezierPoints.Add(new PointF(conn.EndPortLocation.X, conn.EndPortLocation.Y)); // end
 
                         var color = palette.FerryLines;
-                        if (_mapper.RouteFerryPorts.ContainsKey(_mapper.FerryPortbyId[conn.StartPortToken]) ||
-                             _mapper.RouteFerryPorts.ContainsKey(_mapper.FerryPortbyId[conn.EndPortToken]))
+                        try
                         {
-                            color = Brushes.Red;
+                            if (_mapper.RouteFerryPorts.ContainsKey(_mapper.FerryPortbyId[conn.StartPortToken]) ||
+                                 _mapper.RouteFerryPorts.ContainsKey(_mapper.FerryPortbyId[conn.EndPortToken]))
+                            {
+                                color = Brushes.Red;
+                            }
                         }
+                        catch { continue; }
+                            
                         ferryPen = new Pen(color, 50) { DashPattern = new[] { 10f, 10f } };
 
                         g.DrawBeziers(ferryPen, bezierPoints.ToArray());
@@ -485,7 +495,7 @@ namespace TsMap
 
                     var b = mapOverlay.GetBitmap();
 
-                    if (b == null) continue;
+                    if (b == null || !renderFlags.IsActive(RenderFlags.BusStopOverlay) && mapOverlay.OverlayType == OverlayType.BusStop) continue;
                     g.DrawImage(b, mapOverlay.Position.X - (b.Width / 2f), mapOverlay.Position.Y - (b.Height / 2f),
                         b.Width, b.Height);
 

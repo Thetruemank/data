@@ -111,7 +111,13 @@
     <Compile Include="TsSector.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="docs\custom_resources\custom_resources.zip" />
+    <None Include="docs\custom_resources\tsmap\overlay\bus_stop.mat" />
+    <None Include="docs\custom_resources\tsmap\overlay\bus_stop.tobj" />
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="docs\custom_resources\tsmap\overlay\bus_stop.dds" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

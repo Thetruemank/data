@@ -338,7 +338,14 @@ namespace TsMap
 
                         if (key.Contains("price"))
                         {
-                            price = Int32.Parse(value);
+                            try
+                            {
+                                price = Int32.Parse(value);
+                            }
+                            catch
+                            {
+                                price = 0;
+                            }
                         }
 
                         if (key.Contains("time"))
@@ -710,7 +717,7 @@ namespace TsMap
             foreach (var item in Roads) Items.Add(item.Uid, item);
             foreach (var item in Prefabs) Items.Add(item.Uid, item);
             foreach (var item in Cities) Items.Add(item.Uid, item);
-            foreach (var item in FerryConnections) Items.Add(item.Uid, item);
+            foreach (var item in FerryConnections) try { Items.Add(item.Uid, item); } catch { };
         }
 
         /// <summary>
@@ -845,6 +852,9 @@ namespace TsMap
             {
                 if (mod.Load) UberFileSystem.Instance.AddSourceFile(mod.ModPath);
             }
+
+            UberFileSystem.Instance.AddSourceFile(Path.Combine(Environment.CurrentDirectory,
+                "custom_resources.zip"));
 
             Logger.Instance.Info($"Loaded all .scs files in {(DateTime.Now.Ticks - startTime) / TimeSpan.TicksPerMillisecond}ms");
 
