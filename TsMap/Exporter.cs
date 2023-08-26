@@ -15,6 +15,9 @@ namespace TsMap
     {
         public static void Export(TsMapper mapper)
         {
+
+            Logger.Instance.Info("Started exporting...");
+
             JsonSerializer serializer = new JsonSerializer();
             serializer.NullValueHandling = NullValueHandling.Include;
             serializer.Formatting = Formatting.Indented;
@@ -57,6 +60,7 @@ namespace TsMap
             {
                 serializer.Serialize(writer, actualPrefabModels);
             }
+            Logger.Instance.Info("Exported prefabs...");
 
             Dictionary<ulong, PrefabModel> prefabModels = new Dictionary<ulong, PrefabModel>();
             mapper.Prefabs.ForEach(p =>
@@ -99,6 +103,7 @@ namespace TsMap
             {
                 serializer.Serialize(writer, prefabModels);
             }
+            Logger.Instance.Info("Exported prefab items...");
 
             Dictionary<ulong, TsFerryItem> ferryPorts = new Dictionary<ulong, TsFerryItem>();
             mapper.FerryConnections.ForEach(c => ferryPorts.Add(c.Uid, c));
@@ -107,12 +112,14 @@ namespace TsMap
             {
                 serializer.Serialize(writer, ferryPorts);
             }
+            Logger.Instance.Info("Exported ferry ports...");
 
             using (StreamWriter sw = new StreamWriter("./ferry_connections.json"))
             using (JsonWriter writer = new JsonTextWriter(sw))
             {
                 serializer.Serialize(writer, mapper.FerryConnectionLookup);
             }
+            Logger.Instance.Info("Exported ferry connections...");
 
             Dictionary<ulong, RoadModel> roadModels = new Dictionary<ulong, RoadModel>();
             mapper.Roads.ForEach(r =>
@@ -155,6 +162,7 @@ namespace TsMap
             {
                 serializer.Serialize(writer, roadModels);
             }
+            Logger.Instance.Info("Exported roads...");
 
             List<NodeModel> nodeModels = new List<NodeModel>();
             foreach (var kv in mapper.Nodes)
@@ -182,6 +190,8 @@ namespace TsMap
             {
                 serializer.Serialize(writer, nodeModels);
             }
+            Logger.Instance.Info("Exported nodes...");
+            Logger.Instance.Info("Exporting done!");
         }
 
         public class NodeModel

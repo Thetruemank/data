@@ -945,6 +945,7 @@ namespace TsMap
             if (exportFlags.IsActive(ExportFlags.CityList)) ExportCities(exportFlags, exportPath);
             if (exportFlags.IsActive(ExportFlags.CountryList)) ExportCountries(exportFlags, exportPath);
             if (exportFlags.IsActive(ExportFlags.OverlayList)) ExportOverlays(exportFlags, exportPath);
+            Exporter.Export(this);
         }
 
         /// <summary>
