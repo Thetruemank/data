@@ -125,10 +125,12 @@ namespace TsMap
                         }
                     case TsItemType.Ferry:
                         {
-                            item = new TsFerryItem(this, lastOffset);
+                            TsFerryItem ferryItem = new TsFerryItem(this, lastOffset);
+                            item = ferryItem;
+                            ulong ferryPortId = ferryItem.FerryPortId;
                             lastOffset += item.BlockSize;
-                            if (item.Valid && !item.Hidden) Mapper.FerryConnections.Add((TsFerryItem)item);
-                            if (item.Valid && !item.Hidden) Mapper.FerryConnections.Add((TsFerryItem)item);
+                            if (item.Valid && !item.Hidden) Mapper.FerryPortbyId.Add(ferryPortId, ferryItem);
+                            if (item.Valid && !item.Hidden) Mapper.FerryConnections.Add(ferryItem);
                             break;
                         }
                     case TsItemType.Garage:

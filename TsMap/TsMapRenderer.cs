@@ -91,21 +91,17 @@ namespace TsMap
                     {
                         if (conn.Connections.Count == 0) // no extra nodes -> straight line
                         {
-                            try
+                            if (_mapper.RouteFerryPorts.ContainsKey(_mapper.FerryPortbyId[conn.StartPortToken]) ||
+                                _mapper.RouteFerryPorts.ContainsKey(_mapper.FerryPortbyId[conn.EndPortToken]))
                             {
-                                if (_mapper.RouteFerryPorts.ContainsKey(_mapper.FerryPortbyId[conn.StartPortToken]) ||
-                                 _mapper.RouteFerryPorts.ContainsKey(_mapper.FerryPortbyId[conn.EndPortToken]))
-                                {
-                                    ferryPen = new Pen(Brushes.Red, 50) { DashPattern = new[] { 10f, 10f } };
-                                }
-                                else
-                                {
-                                    ferryPen = new Pen(palette.FerryLines, 50) { DashPattern = new[] { 10f, 10f } };
-                                }
-                                g.DrawLine(ferryPen, conn.StartPortLocation, conn.EndPortLocation);
-                                continue;
+                                ferryPen = new Pen(Brushes.Red, 50) { DashPattern = new[] { 10f, 10f } };
                             }
-                            catch { continue;  }
+                            else
+                            {
+                                ferryPen = new Pen(palette.FerryLines, 50) { DashPattern = new[] { 10f, 10f } };
+                            }
+                            g.DrawLine(ferryPen, conn.StartPortLocation, conn.EndPortLocation);
+                            continue;
                         }
 
                         var startYaw = Math.Atan2(conn.Connections[0].Z - conn.StartPortLocation.Y, // get angle of the start port to the first node
