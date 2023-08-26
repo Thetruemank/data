@@ -1,6 +1,6 @@
-﻿namespace TsMap.Common
+﻿namespace TsMap.Map.Overlays
 {
-    public enum OverlayTypes
+    public enum OverlayType
     {
         /// <summary>
         /// Overlays which are not in a specific directory

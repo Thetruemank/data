@@ -59,5 +59,10 @@ namespace TsMap.TsItem
             return EndNode ?? (EndNode = Sector.Mapper.GetNodeByUid(EndNodeUid));
         }
 
+        internal virtual void Update()
+        {
+            
+        }
+
     }
 }
