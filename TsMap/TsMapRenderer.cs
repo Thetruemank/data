@@ -4,6 +4,7 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Linq;
 using TsMap.Common;
+using TsMap.Helpers;
 using TsMap.Helpers.Logger;
 using TsMap.Map.Overlays;
 
@@ -169,7 +170,8 @@ namespace TsMap
             var mapAreaStartTime = DateTime.Now.Ticks;
             if (renderFlags.IsActive(RenderFlags.MapAreas))
             {
-                foreach (var mapArea in _mapper.MapAreas.OrderBy(x => x.DrawOver))
+                var drawingQueue = new List<TsPrefabPolyLook>();
+                foreach (var mapArea in _mapper.MapAreas)
                 {
                     if (!activeDlcGuards.Contains(mapArea.DlcGuard) ||
                         mapArea.IsSecret && !renderFlags.IsActive(RenderFlags.SecretRoads) ||
@@ -188,12 +190,34 @@ namespace TsMap
                         points.Add(new PointF(node.X, node.Z));
                     }
 
-                    Brush fillColor = palette.PrefabLight;
-                    if ((mapArea.ColorIndex & 0x01) != 0) fillColor = palette.PrefabLight;
-                    else if ((mapArea.ColorIndex & 0x02) != 0) fillColor = palette.PrefabDark;
-                    else if ((mapArea.ColorIndex & 0x03) != 0) fillColor = palette.PrefabGreen;
+                    Brush fillColor = palette.PrefabRoad;
+                    var zIndex = mapArea.DrawOver ? 10 : 0;
+                    if ((mapArea.ColorIndex & 0x03) == 3)
+                    {
+                        fillColor = palette.PrefabGreen;
+                        zIndex = mapArea.DrawOver ? 13 : 3;
+                    }
+                    else if ((mapArea.ColorIndex & 0x02) == 2)
+                    {
+                        fillColor = palette.PrefabDark;
+                        zIndex = mapArea.DrawOver ? 12 : 2;
+                    }
+                    else if ((mapArea.ColorIndex & 0x01) == 1)
+                    {
+                        fillColor = palette.PrefabLight;
+                        zIndex = mapArea.DrawOver ? 11 : 1;
+                    }
 
-                    g.FillPolygon(fillColor, points.ToArray());
+                    drawingQueue.Add(new TsPrefabPolyLook(points)
+                    {
+                        Color = fillColor,
+                        ZIndex = zIndex
+                    });
+                }
+
+                foreach (var mapArea in drawingQueue.OrderBy(p => p.ZIndex))
+                {
+                    mapArea.Draw(g);
                 }
             }
             var mapAreaTime = DateTime.Now.Ticks - mapAreaStartTime;
@@ -267,17 +291,30 @@ namespace TsMap
 
                                 if (polyPoints.Count < 2) continue;
 
-                                var colorFlag = prefabItem.Prefab.MapPoints[polyPoints.First().Key].PrefabColorFlags;
+                                var visualFlag = prefabItem.Prefab.MapPoints[polyPoints.First().Key].PrefabColorFlags;
 
                                 Brush fillColor = palette.PrefabLight;
-                                if ((colorFlag & 0x02) != 0) fillColor = palette.PrefabLight;
-                                else if ((colorFlag & 0x04) != 0) fillColor = palette.PrefabDark;
-                                else if ((colorFlag & 0x08) != 0) fillColor = palette.PrefabGreen;
+                                var roadOver = MemoryHelper.IsBitSet(visualFlag, 0); // Road Over flag
+                                var zIndex = roadOver ? 10 : 0;
+                                if (MemoryHelper.IsBitSet(visualFlag, 1))
+                                {
+                                    fillColor = palette.PrefabLight;
+                                }
+                                else if (MemoryHelper.IsBitSet(visualFlag, 2))
+                                {
+                                    fillColor = palette.PrefabDark;
+                                    zIndex = roadOver ? 11 : 1;
+                                }
+                                else if (MemoryHelper.IsBitSet(visualFlag, 3))
+                                {
+                                    fillColor = palette.PrefabGreen;
+                                    zIndex = roadOver ? 12 : 2;
+                                }
                                 // else fillColor = _palette.Error; // Unknown
 
-                                var prefabLook = new TsPrefabPolyLook(polyPoints.Values.ToList(), prefabItem)
+                                var prefabLook = new TsPrefabPolyLook(polyPoints.Values.ToList())
                                 {
-                                    ZIndex = ((colorFlag & 0x01) != 0) ? 3 : 2,
+                                    ZIndex = zIndex,
                                     Color = ((_mapper.PrefabNav.ContainsKey(prefabItem) && _mapper.PrefabNav.ContainsKey(prefabItem)) || navPrefContains) ? Brushes.Red : fillColor
                                 };
 
@@ -338,10 +375,10 @@ namespace TsMap
                                     (Consts.LaneWidth * mapPointLaneCount + mapPoint.LaneOffset) / 2f, roadYaw - Math.PI / 2);
                                 cornerCoords.Add(RenderHelper.RotatePoint(coords.X, coords.Y, rot, originNode.X, originNode.Z));
 
-                                TsPrefabLook prefabLook = new TsPrefabPolyLook(cornerCoords, prefabItem)
+                                TsPrefabLook prefabLook = new TsPrefabPolyLook(cornerCoords)
                                 {
                                     Color = ((_mapper.PrefabNav.ContainsKey(prefabItem) && _mapper.PrefabNav.ContainsKey(prefabItem)) || navPrefContains) ? Brushes.Red : palette.PrefabRoad,
-                                    ZIndex = 4,
+                                    ZIndex = MemoryHelper.IsBitSet(mapPoint.PrefabColorFlags, 0) ? 13 : 3,
                                 };
 
                                 /*if ((_mapper.PrefabNav.ContainsKey(prefabItem) && _mapper.PrefabNav.ContainsKey(prefabItem) && _mapper.PrefabNav[prefabItem].Contains(prefabItem.Prefab.PrefabCurves[i])) || _mapper.RoutePrefabs.Contains(prefabItem))
@@ -392,15 +429,6 @@ namespace TsMap
                     }
                 }
 
-                prefabs.ForEach(p =>
-                {
-                    if (p.HasLooks() && false)
-                    {
-                        var l = p.GetLooks()[0];
-                        if (l.PrefabItem != null)
-                            g.DrawString("POS: " + l.PrefabItem.X + " | " + l.PrefabItem.Z, _defaultFont, Brushes.Pink, l.Points[0].X, l.Points[0].Y);
-                    }
-                });
             }
             var prefabTime = DateTime.Now.Ticks - prefabStartTime;
 

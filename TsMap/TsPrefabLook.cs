@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+﻿﻿using System.Collections.Generic;
 using System.Drawing;
 
 namespace TsMap
@@ -7,16 +7,14 @@ namespace TsMap
     {
         public int ZIndex { get; set; }
         public Brush Color { get; set; }
-        public readonly List<PointF> Points;
-        public readonly TsItem.TsPrefabItem PrefabItem;
+        protected readonly List<PointF> Points;
 
-        protected TsPrefabLook(List<PointF> points, TsItem.TsPrefabItem prefabItem)
+        protected TsPrefabLook(List<PointF> points)
         {
             Points = points;
-            PrefabItem = prefabItem;
         }
 
-        protected TsPrefabLook() : this(new List<PointF>(), null) { }
+        protected TsPrefabLook() : this(new List<PointF>()) { }
 
         public void AddPoint(PointF p)
         {
@@ -48,7 +46,7 @@ namespace TsMap
 
     public class TsPrefabPolyLook : TsPrefabLook
     {
-        public TsPrefabPolyLook(List<PointF> points, TsItem.TsPrefabItem prefabItem) : base(points, prefabItem) { }
+        public TsPrefabPolyLook(List<PointF> points) : base(points) { }
 
         public override void Draw(Graphics g)
         {
