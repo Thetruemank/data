@@ -9,6 +9,12 @@ namespace TsMap
         public ulong Token { get; }
 
         public float Offset;
+        public float RoadSizeLeft;
+        public float RoadSizeRight;
+        public float ShoulderSpaceLeft;
+        public float ShoulderSpaceRight;
+        public float ShoulderSizeLeft;
+        public float ShoulderSizeRight;
 
         public bool IsHighway { get; set; }
         public bool IsLocal { get; set; }
@@ -17,6 +23,8 @@ namespace TsMap
 
         public readonly List<string> LanesLeft;
         public readonly List<string> LanesRight;
+        public readonly List<string> LaneOffsetsLeft;
+        public readonly List<string> LaneOffsetsRight;
 
         public static double Hermite(float s, float x, float z, double tanX, double tanZ)
         {

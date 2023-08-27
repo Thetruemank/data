@@ -218,6 +218,7 @@ namespace TsMap
 
                 foreach (var line in lines)
                 {
+                    // Logger.Instance.Info(line);
                     var (validLine, key, value) = SiiHelper.ParseLine(line);
                     if (validLine)
                     {
@@ -250,6 +251,39 @@ namespace TsMap
                         {
                             roadLook.Offset = float.Parse(value, CultureInfo.InvariantCulture);
                         }
+                        else if (key == "shoulder_space_left")
+                        {
+                            roadLook.ShoulderSpaceLeft = float.Parse(value, CultureInfo.InvariantCulture);
+                        }
+                        else if (key == "shoulder_size_left")
+                        {
+                            roadLook.ShoulderSizeLeft = float.Parse(value, CultureInfo.InvariantCulture);
+                        }
+                        else if (key == "shoulder_space_right")
+                        {
+                            roadLook.ShoulderSpaceRight = float.Parse(value, CultureInfo.InvariantCulture);
+                        }
+                        else if (key == "shoulder_size_right")
+                        {
+                            roadLook.ShoulderSizeRight = float.Parse(value, CultureInfo.InvariantCulture);
+                        }                        
+                        else if (key == "lane_offsets_left")
+                        {
+                            roadLook.LaneOffsetsLeft.Add(value);
+                        }
+                        else if (key == "lane_offsets_right")
+                        {
+                            roadLook.LaneOffsetsRight.Add(value);
+                        }
+                        else if (key == "road_size_left")
+                        {
+                            roadLook.RoadSizeLeft = float.Parse(value, CultureInfo.InvariantCulture);
+                        }
+                        else if (key == "road_size_right")
+                        {
+                            roadLook.RoadSizeRight = float.Parse(value, CultureInfo.InvariantCulture);
+                        }
+
                     }
 
                     if (line.Contains("}") && roadLook != null)
