@@ -46,11 +46,15 @@ namespace TsMap
                     {
                         var pfi = new PrefabNavItem
                         {
+                            StartNode = new TsPrefabNode(),
+                            EndNode = new TsPrefabNode(),
                             CurveIds = new List<int>(),
                             Distance = 0
                         };
                         kv.Value.Item1.ForEach(c => pfi.CurveIds.Add(c.id));
                         pfi.Distance = kv.Value.Item2;
+                        pfi.StartNode = kv.Key.Item1;
+                        pfi.EndNode = kv.Key.Item2;
                         pm.NavigationRoutes.Add(kv.Key.Item1.id + "/" + kv.Key.Item2.id, pfi);
                     }
                 actualPrefabModels.Add(pm.Token, pm);
@@ -213,6 +217,8 @@ namespace TsMap
 
         public class PrefabNavItem
         {
+            public TsPrefabNode StartNode;
+            public TsPrefabNode EndNode;
             public List<int> CurveIds;
             public float Distance;
         }

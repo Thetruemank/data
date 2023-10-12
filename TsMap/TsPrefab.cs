@@ -81,6 +81,7 @@ namespace TsMap
         public List<TsTriggerPoint> TriggerPoints { get; private set; }
 
         public List<TsPrefabCurve> PrefabCurves { get; private set; }
+        public List<TsPrefabCurve> ActualCurves { get; private set; }
         public Dictionary<Tuple<TsPrefabNode, TsPrefabNode>, Tuple<List<TsPrefabCurve>, float>> NavigationRoutes { get; private set; }
 
         public TsPrefab(string filePath, ulong token, string category)
@@ -90,6 +91,7 @@ namespace TsMap
             Category = category;
 
             PrefabCurves = new List<TsPrefabCurve>();
+            ActualCurves = new List<TsPrefabCurve>();
             NavigationRoutes = new Dictionary<Tuple<TsPrefabNode, TsPrefabNode>, Tuple<List<TsPrefabCurve>, float>>();
 
             var file = UberFileSystem.Instance.GetFile(FilePath);
@@ -277,6 +279,7 @@ namespace TsMap
                         while (actualCurve.id != -1)
                         {
                             distanceLength += (float)Math.Sqrt(Math.Pow(actualCurve.start_X - actualCurve.end_X, 2) + Math.Pow(actualCurve.start_Z - actualCurve.end_Z, 2));
+                            ActualCurves.Add(actualCurve);
                             path.Add(actualCurve);
                             actualCurve = distances[actualCurve].Item2;
                         }
