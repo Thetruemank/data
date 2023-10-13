@@ -5,7 +5,9 @@
 - To use download Visual Studio with C# (.net) support and built the application.
  - Then click the generate button and untoggle everything in the menu. Generate. The files will be in the ts-map-canvas/bin/debug/ folder
 
-# Euro Truck Simulator 2 / American Truck Simulator Map Renderer
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/E1E1NOC3P)
+
+# Old description
 
 This Application reads ATS/ETS2 files to draw roads, prefabs, map overlays, ferry lines and city names. It can also generate a route between two prefabs. This is an updated fork of [spedcord/ts-map](https://github.com/Spedcord/ts-map/)
 
