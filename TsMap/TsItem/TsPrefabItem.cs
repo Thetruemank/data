@@ -14,7 +14,10 @@ namespace TsMap.TsItem
         private const int NodeLookBlockSize = 0x3A;
         private const int NodeLookBlockSize825 = 0x38;
         private const int PrefabVegetationBlockSize = 0x20;
+        public ulong FerryUid { get; private set; }
         public int Origin { get; private set; }
+        public int Padding { get; private set; }
+        public int Origin2 { get; private set; }
         public TsPrefab Prefab { get; private set; }
         private List<TsPrefabLook> _looks;
 
@@ -247,9 +250,12 @@ namespace TsMap.TsItem
                 fileOffset += 0x08;
             }
             var connectedItemCount = MemoryHelper.ReadInt32(Sector.Stream, fileOffset);
-            Origin = MemoryHelper.ReadUint8(Sector.Stream, fileOffset += 0x04 + (0x08 * connectedItemCount) + 0x08); // 0x04(connItemCount) + connItemUids + 0x08(m_some_uid)
+            FerryUid = MemoryHelper.ReadUInt64(Sector.Stream, fileOffset + 0x04 + (0x08 * connectedItemCount));
+            Origin = MemoryHelper.ReadUint8(Sector.Stream, fileOffset += 0x04 + (0x08 * connectedItemCount) + 0x08); // 0x04(connItemCount) + connItemUids + 0x08(Ferry Uid)
+            //Origin2 = MemoryHelper.ReadInt8(Sector.Stream, fileOffset += 0x01);
+            //Padding = MemoryHelper.ReadInt8(Sector.Stream, fileOffset + 0x01);
             fileOffset += 0x02 + nodeCount * 0x0C + 0x08; // 0x02(origin & padding) + nodeLooks + 0x08(padding2)
-
+            Padding = MemoryHelper.ReadInt32(Sector.Stream, fileOffset - 0x08);
             BlockSize = fileOffset - startOffset;
         }
 

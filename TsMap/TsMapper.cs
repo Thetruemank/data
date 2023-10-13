@@ -861,6 +861,8 @@ namespace TsMap
                 PrefabNav[prefab] = prefab.Prefab.NavigationRoutes[key].Item1;
                 returnValue = new Tuple<bool, float>(true, prefab.Prefab.NavigationRoutes[key].Item2);
             }
+
+
             return returnValue;
             // TODO: Add the possibility to return also the weight of the path to be used in Dijkstra's Algorithm
         }

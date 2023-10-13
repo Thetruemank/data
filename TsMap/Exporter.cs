@@ -83,7 +83,10 @@ namespace TsMap
                     Hidden = p.Hidden,
                     Flags = p.Flags,
                     Navigation = new Dictionary<ulong, Tuple<float, List<SimpleItem>>>(),
+                    FerryUid = p.FerryUid,
                     Origin = p.Origin,
+                    Padding = p.Padding,
+                    //Origin2 = p.Origin2,
                     Prefab = p.Prefab.Token,
                     IsSecret = p.IsSecret
                 };
@@ -176,6 +179,8 @@ namespace TsMap
                     Uid = kv.Value.Uid,
                     X = kv.Value.X,
                     Z = kv.Value.Z,
+                    rX = kv.Value.rX,
+                    rZ = kv.Value.rZ,
                     Rotation = kv.Value.Rotation,
                     ForwardItem = kv.Value.ForwardItem == null ? null : new SimpleItem
                     {
@@ -203,6 +208,8 @@ namespace TsMap
             public ulong Uid;
             public float X;
             public float Z;
+            public float rX;
+            public float rZ;
             public float Rotation;
 
             public SimpleItem ForwardItem;
@@ -262,7 +269,10 @@ namespace TsMap
 
             public Dictionary<ulong, Tuple<float, List<SimpleItem>>> Navigation;
 
+            public ulong FerryUid;
             public int Origin;
+            public int Padding;
+            //public int Origin2;
             public ulong Prefab;
 
             public bool IsSecret;
