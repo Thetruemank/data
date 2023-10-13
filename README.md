@@ -2,8 +2,8 @@
 - The repo might or might not be maintained.
 - Currently tested with 1.48 and it does work
 - The description below will not be updated.
-- To use download Visual Studio with C# (.net) support and built the application.
- - Then click the generate button and untoggle everything in the menu. Generate. The files will be in the ts-map-canvas/bin/debug/ folder
+- Download Visual Studio with C# (.net) support and then build the application.
+ - Once you've startid it, click the generate button and untoggle everything in the menu. Generate. The json files will be in the ts-map-canvas/bin/debug/ folder
 
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/E1E1NOC3P)
 
