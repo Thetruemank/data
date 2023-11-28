@@ -69,6 +69,8 @@ namespace TsMap
             Dictionary<ulong, PrefabModel> prefabModels = new Dictionary<ulong, PrefabModel>();
             mapper.Prefabs.ForEach(p =>
             {
+                p.GetStartNode();
+                p.GetEndNode();
                 var pm = new PrefabModel
                 {
                     Uid = p.Uid,
