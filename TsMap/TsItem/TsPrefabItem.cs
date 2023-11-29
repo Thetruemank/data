@@ -23,6 +23,8 @@ namespace TsMap.TsItem
 
         public bool IsSecret { get; private set; }
 
+        public float[,] curvePoints { get; private set; }
+
         public void AddLook(TsPrefabLook look)
         {
             _looks.Add(look);
@@ -324,11 +326,11 @@ namespace TsMap.TsItem
             var rot = (float)(originNode.Rotation - Math.PI -
                 Math.Atan2(mapPointOrigin.RotZ, mapPointOrigin.RotX) + Math.PI / 2);
 
-            var prefabstartX = originNode.X - mapPointOrigin.X;
+            var prefabStartX = originNode.X - mapPointOrigin.X;
             var prefabStartZ = originNode.Z - mapPointOrigin.Z;
             foreach (var spawnPoint in Prefab.SpawnPoints)
             {
-                var newPoint = RenderHelper.RotatePoint(prefabstartX + spawnPoint.X, prefabStartZ + spawnPoint.Z, rot,
+                var newPoint = RenderHelper.RotatePoint(prefabStartX + spawnPoint.X, prefabStartZ + spawnPoint.Z, rot,
                     originNode.X, originNode.Z);
 
                 var overlayName = "";
@@ -373,7 +375,7 @@ namespace TsMap.TsItem
             var lastId = -1;
             foreach (var triggerPoint in Prefab.TriggerPoints) // trigger points in prefabs: garage, hotel, ...
             {
-                var newPoint = RenderHelper.RotatePoint(prefabstartX + triggerPoint.X, prefabStartZ + triggerPoint.Z,
+                var newPoint = RenderHelper.RotatePoint(prefabStartX + triggerPoint.X, prefabStartZ + triggerPoint.Z,
                     rot,
                     originNode.X, originNode.Z);
 
@@ -385,6 +387,20 @@ namespace TsMap.TsItem
                     Sector.Mapper.OverlayManager.AddOverlay("parking_ico", OverlayType.Map, newPoint.X, newPoint.Y,
                         "Parking", DlcGuard, IsSecret);
                 }
+            }
+
+            // Load the correct positions for the curves
+            curvePoints = new float[Prefab.PrefabCurves.Count,4];
+            for (int i = 0; i < Prefab.PrefabCurves.Count; i++)
+            {
+                var newPointStart = RenderHelper.RotatePoint(prefabStartX + Prefab.PrefabCurves[i].start_X, prefabStartZ + Prefab.PrefabCurves[i].start_Z, rot, originNode.X, originNode.Z);
+                var newPointEnd = RenderHelper.RotatePoint(prefabStartX + Prefab.PrefabCurves[i].end_X, prefabStartZ + Prefab.PrefabCurves[i].end_Z, rot, originNode.X, originNode.Z);
+
+
+                curvePoints[i, 0] = newPointStart.X;
+                curvePoints[i, 1] = newPointStart.Y;
+                curvePoints[i, 2] = newPointEnd.X;
+                curvePoints[i, 3] = newPointEnd.Y;
             }
         }
     }

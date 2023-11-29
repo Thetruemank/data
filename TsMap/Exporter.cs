@@ -90,7 +90,8 @@ namespace TsMap
                     Padding = p.Padding,
                     //Origin2 = p.Origin2,
                     Prefab = p.Prefab.Token,
-                    IsSecret = p.IsSecret
+                    IsSecret = p.IsSecret,
+                    curvePoints = p.curvePoints
                 };
                 if (p.Navigation != null)
                 {
@@ -278,6 +279,8 @@ namespace TsMap
             public ulong Prefab;
 
             public bool IsSecret;
+
+            public float[,] curvePoints;
         }
 
         public class RoadModel
