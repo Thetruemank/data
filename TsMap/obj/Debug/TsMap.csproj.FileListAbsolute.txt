@@ -1,0 +1,9 @@
+C:\Users\Tuomas\Documents\GitHub\ts-map-lane-assist\TsMap\bin\Debug\TsMap.dll
+C:\Users\Tuomas\Documents\GitHub\ts-map-lane-assist\TsMap\bin\Debug\TsMap.pdb
+C:\Users\Tuomas\Documents\GitHub\ts-map-lane-assist\TsMap\bin\Debug\Newtonsoft.Json.dll
+C:\Users\Tuomas\Documents\GitHub\ts-map-lane-assist\TsMap\bin\Debug\Newtonsoft.Json.xml
+C:\Users\Tuomas\Documents\GitHub\ts-map-lane-assist\TsMap\obj\Debug\TsMap.csproj.AssemblyReference.cache
+C:\Users\Tuomas\Documents\GitHub\ts-map-lane-assist\TsMap\obj\Debug\TsMap.csproj.CoreCompileInputs.cache
+C:\Users\Tuomas\Documents\GitHub\ts-map-lane-assist\TsMap\obj\Debug\TsMap.csproj.CopyComplete
+C:\Users\Tuomas\Documents\GitHub\ts-map-lane-assist\TsMap\obj\Debug\TsMap.dll
+C:\Users\Tuomas\Documents\GitHub\ts-map-lane-assist\TsMap\obj\Debug\TsMap.pdb

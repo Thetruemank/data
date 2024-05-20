@@ -215,6 +215,7 @@ namespace TsMap
                 var data = roadLookFile.Entry.Read();
                 var lines = Encoding.UTF8.GetString(data).Split('\n');
                 TsRoadLook roadLook = null;
+                bool hadOffset = false;
 
                 foreach (var line in lines)
                 {
@@ -250,6 +251,7 @@ namespace TsMap
                         else if (key == "road_offset")
                         {
                             roadLook.Offset = float.Parse(value, CultureInfo.InvariantCulture);
+                            hadOffset = true;
                         }
                         else if (key == "shoulder_space_left")
                         {
@@ -295,6 +297,12 @@ namespace TsMap
                         }
                     }
                 }
+
+                if (!hadOffset)
+                {
+                    roadLook.Offset = 999;
+                }
+
             }
         }
 
