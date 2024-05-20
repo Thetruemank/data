@@ -181,8 +181,10 @@ namespace TsMap
                 {
                     Uid = kv.Value.Uid,
                     X = kv.Value.X,
+                    Y = kv.Value.Y,
                     Z = kv.Value.Z,
                     rX = kv.Value.rX,
+                    rY = kv.Value.rY,
                     rZ = kv.Value.rZ,
                     Rotation = kv.Value.Rotation,
                     ForwardItem = kv.Value.ForwardItem == null ? null : new SimpleItem
@@ -210,8 +212,10 @@ namespace TsMap
         {
             public ulong Uid;
             public float X;
+            public float Y;
             public float Z;
             public float rX;
+            public float rY;
             public float rZ;
             public float Rotation;
 

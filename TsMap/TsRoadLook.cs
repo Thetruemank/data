@@ -9,6 +9,7 @@ namespace TsMap
         public ulong Token { get; }
 
         public float Offset;
+        public string Name;
         public float RoadSizeLeft;
         public float RoadSizeRight;
         public float ShoulderSpaceLeft;

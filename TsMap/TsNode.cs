@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Security.Policy;
 using TsMap.Helpers;
+using TsMap.Helpers.Logger;
 
 namespace TsMap
 {
@@ -9,8 +11,10 @@ namespace TsMap
 
         public float X { get; }
         public float Z { get; }
+        public float Y { get; }
         public float Rotation { get; }
         public float rX { get; }
+        public float rY { get; }
         public float rZ { get; }
 
         public TsItem.TsItem ForwardItem { get; set; }
@@ -29,10 +33,12 @@ namespace TsMap
             BackwardItem = null;
 
             X = MemoryHelper.ReadInt32(sector.Stream, fileOffset += 0x08) / 256f;
-            Z = MemoryHelper.ReadInt32(sector.Stream, fileOffset += 0x08) / 256f;
+            Y = MemoryHelper.ReadInt32(sector.Stream, fileOffset += 0x04) / 256f;
+            Z = MemoryHelper.ReadInt32(sector.Stream, fileOffset += 0x04) / 256f;
 
             rX = MemoryHelper.ReadSingle(sector.Stream, fileOffset += 0x04);
-            rZ = MemoryHelper.ReadSingle(sector.Stream, fileOffset + 0x08);
+            rY = MemoryHelper.ReadSingle(sector.Stream, fileOffset += 0x04);
+            rZ = MemoryHelper.ReadSingle(sector.Stream, fileOffset + 0x04);
 
             var rot = Math.PI - Math.Atan2(rZ, rX);
             Rotation = (float) (rot % Math.PI * 2);

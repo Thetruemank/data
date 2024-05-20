@@ -216,7 +216,6 @@ namespace TsMap
                 var lines = Encoding.UTF8.GetString(data).Split('\n');
                 TsRoadLook roadLook = null;
                 bool hadOffset = false;
-
                 foreach (var line in lines)
                 {
                     // Logger.Instance.Info(line);
@@ -228,6 +227,10 @@ namespace TsMap
                             roadLook = new TsRoadLook(ScsToken.StringToToken(SiiHelper.Trim(value.Split('.')[1].Trim('{'))));
                         }
                         if (roadLook == null) continue;
+                        if (key == "name")
+                        {
+                            roadLook.Name = value;
+                        }
                         if (key == "lanes_left[]")
                         {
                             roadLook.LanesLeft.Add(value);
@@ -290,6 +293,10 @@ namespace TsMap
 
                     if (line.Contains("}") && roadLook != null)
                     {
+                        if (!hadOffset)
+                        {
+                            roadLook.Offset = 999;
+                        }
                         if (roadLook.Token != 0 && !_roadLookup.ContainsKey(roadLook.Token))
                         {
                             _roadLookup.Add(roadLook.Token, roadLook);
@@ -298,10 +305,6 @@ namespace TsMap
                     }
                 }
 
-                if (!hadOffset)
-                {
-                    roadLook.Offset = 999;
-                }
 
             }
         }
