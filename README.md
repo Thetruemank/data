@@ -1,9 +1,9 @@
 # This repository has been made to support my main [application](https://github.com/Tumppi066/Euro-Truck-Simulator-2-Lane-Assist)
 - The repo might or might not be maintained.
-- Currently tested with 1.48 and it does work
+- Currently tested with 1.50!
 - The description below will not be updated.
 - Download Visual Studio with C# (.net) support and then build the application.
- - Once you've startid it, click the generate button and untoggle everything in the menu. Generate. The json files will be in the ts-map-canvas/bin/debug/ folder
+ - After starting and loading the map, json files will be in the ts-map-canvas/bin/debug/ folder
 
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/E1E1NOC3P)
 
