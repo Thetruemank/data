@@ -12,6 +12,7 @@
 
 # Build results
 TsMap.Canvas/bin/Debug/*.json
+TsMap.Canvas/bin/x64/Debug/*.json
 #[Dd]ebug/
 #[Dd]ebugPublic/
 #[Rr]elease/
