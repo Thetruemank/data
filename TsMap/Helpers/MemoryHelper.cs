@@ -219,6 +219,8 @@ namespace TsMap.Helpers
                 dest,
                 (UIntPtr)size, out var bytesWritten);
 
+            LibdeflateWrapper.libdeflate_free_decompressor(decompressor);
+
             if (result != libdeflate_result.LIBDEFLATE_SUCCESS)
             {
                 Logger.Logger.Instance.Error($"Zlib extraction was not successful: {result}");
