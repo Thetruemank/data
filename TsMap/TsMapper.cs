@@ -987,15 +987,15 @@ namespace TsMap
                 }
             }
 
-            CalculatePath(firstPfItm, secondPfItm);
-            Logger.Instance.Info("Starting Calculating Path inside Prefabs...");
-            CalculatePrefabsPath();
+            //CalculatePath(firstPfItm, secondPfItm);
+            //Logger.Instance.Info("Starting Calculating Path inside Prefabs...");
+            //CalculatePrefabsPath();
 
-            Logger.Instance.Info("Selected Roads: " + RouteRoads.Count + " - Selected Prefabs: " + PrefabNav.Count);
-            Logger.Instance.Info("Start Location: X -> " + firstPfItm.X + ";Z -> " + firstPfItm.Z);
-            Logger.Instance.Info("End Location: X -> " + secondPfItm.X + ";Z -> " + secondPfItm.Z);
-            Logger.Instance.Info($"It took {(DateTime.Now.Ticks - preMapParseTime) / TimeSpan.TicksPerMillisecond} ms to parse all (*.base)" +
-                    $" map files and {(DateTime.Now.Ticks - startTime) / TimeSpan.TicksPerMillisecond} ms total.");
+            //Logger.Instance.Info("Selected Roads: " + RouteRoads.Count + " - Selected Prefabs: " + PrefabNav.Count);
+            //Logger.Instance.Info("Start Location: X -> " + firstPfItm.X + ";Z -> " + firstPfItm.Z);
+            //Logger.Instance.Info("End Location: X -> " + secondPfItm.X + ";Z -> " + secondPfItm.Z);
+            //Logger.Instance.Info($"It took {(DateTime.Now.Ticks - preMapParseTime) / TimeSpan.TicksPerMillisecond} ms to parse all (*.base)" +
+            //$" map files and {(DateTime.Now.Ticks - startTime) / TimeSpan.TicksPerMillisecond} ms total.");
 
 
         }

@@ -178,4 +178,8 @@
     </BootstrapperPackage>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PostBuildEvent>copy /Y "$(SolutionDir)docs\custom_resources.zip" "$(TargetDir)custom_resources.zip"
+copy /Y "$(SolutionDir)libs\libdeflate.dll" "$(TargetDir)libdeflate.dll"</PostBuildEvent>
+  </PropertyGroup>
 </Project>

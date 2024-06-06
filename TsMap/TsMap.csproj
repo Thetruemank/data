@@ -22,6 +22,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <PlatformTarget>AnyCPU</PlatformTarget>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -49,11 +50,17 @@
   <ItemGroup>
     <Compile Include="Common\DlcGuard.cs" />
     <Compile Include="Common\Consts.cs" />
+    <Compile Include="FileSystem\Hash\HashEntryV2.cs" />
+    <Compile Include="FileSystem\Hash\HashEntryV1.cs" />
+    <Compile Include="FileSystem\Hash\Metadata.cs" />
+    <Compile Include="FileSystem\libdeflate\GDeflate.cs" />
+    <Compile Include="FileSystem\libdeflate\LibdeflateWrapper.cs" />
+    <Compile Include="Map\Overlays\Dds.cs" />
+    <Compile Include="Map\Overlays\Material.cs" />
     <Compile Include="Map\Overlays\OverlayType.cs" />
     <Compile Include="Exporter.cs" />
     <Compile Include="FileSystem\CityHash.cs" />
     <Compile Include="FileSystem\Entry.cs" />
-    <Compile Include="FileSystem\Hash\HashEntry.cs" />
     <Compile Include="FileSystem\Hash\HashArchiveHeader.cs" />
     <Compile Include="FileSystem\ArchiveFile.cs" />
     <Compile Include="FileSystem\Zip\ZipEntry.cs" />
