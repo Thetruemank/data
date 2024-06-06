@@ -10,8 +10,8 @@ namespace TsMap
         public ulong Uid { get; }
 
         public float X { get; }
-        public float Z { get; }
         public float Y { get; }
+        public float Z { get; }
         public float Rotation { get; }
         public float rX { get; }
         public float rY { get; }

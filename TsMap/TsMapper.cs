@@ -207,6 +207,8 @@ namespace TsMap
                 return;
             }
 
+            int keyCount = 0;
+            string[] keys = new string[1000];
             foreach (var roadLookFileName in worldDirectory.GetFiles("road_look"))
             {
                 if (!roadLookFileName.StartsWith("road")) continue;
@@ -218,10 +220,16 @@ namespace TsMap
                 bool hadOffset = false;
                 foreach (var line in lines)
                 {
-                    // Logger.Instance.Info(line);
+                    Logger.Instance.Info(line);
                     var (validLine, key, value) = SiiHelper.ParseLine(line);
                     if (validLine)
                     {
+                        // Add the key to the keys array if it's not there already
+                        if (!keys.Contains(key))
+                        {
+                            keys[keyCount] = key;
+                            keyCount++;
+                        }
                         if (key == "road_look")
                         {
                             roadLook = new TsRoadLook(ScsToken.StringToToken(SiiHelper.Trim(value.Split('.')[1].Trim('{'))));
@@ -306,6 +314,10 @@ namespace TsMap
                 }
 
 
+            }
+            for(int i = 0; i < keyCount; i++)
+            {
+                Logger.Instance.Info(keys[i]);
             }
         }
 
@@ -500,10 +512,11 @@ namespace TsMap
         /// </summary>
         private void LoadNavigation()
         {
-            Logger.Instance.Info("=> " + Prefabs.Count + " prefabs");
+            Logger.Instance.Info("There are " + Prefabs.Count + " prefabs");
+            //Logger.Instance.Info("=> " + Prefabs.Count + " prefabs");
             foreach (var prefab in Prefabs)
             {
-                Logger.Instance.Info("=> => " + prefab.Uid + " = " + prefab.Nodes.Count + " nodes");
+                //Logger.Instance.Info("=> => " + prefab.Uid + " = " + prefab.Nodes.Count + " nodes");
                 foreach (var nodeStr in prefab.Nodes)
                 {
                     var node = GetNodeByUid(nodeStr);

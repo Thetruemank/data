@@ -106,6 +106,14 @@ namespace TsMap.Helpers
             }
         }
 
+        internal static unsafe string ReadStringFromBytes(byte[] s, int pos, int length)
+        {
+            fixed (byte* p = &s[0])
+            {
+                return Encoding.UTF8.GetString(p + pos, length);
+            }
+        }
+
         internal static string Decrypt3Nk(byte[] src) // from quickbms scsgames.bms script
         {
             if (src.Length < 0x05 || src[0] != 0x33 && src[1] != 0x6E && src[2] != 0x4B) return null;
