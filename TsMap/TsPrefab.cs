@@ -52,8 +52,10 @@ namespace TsMap
         public int id;
         public int idNode;
         public float start_X;
+        public float start_Y;
         public float start_Z;
         public float end_X;
+        public float end_Y;
         public float end_Z;
         public float lenght;
         public List<int> nextLines;
@@ -204,12 +206,14 @@ namespace TsMap
                 var curve = new TsPrefabCurve
                 {
                     id = i,
-                    idNode = BitConverter.ToInt32(_stream, curveBaseOffset + 0x0C),
-                    start_X = BitConverter.ToSingle(_stream, curveBaseOffset + 0x10),
-                    start_Z = BitConverter.ToSingle(_stream, curveBaseOffset + 0x18),
-                    end_X = BitConverter.ToSingle(_stream, curveBaseOffset + 0x1C),
-                    end_Z = BitConverter.ToSingle(_stream, curveBaseOffset + 0x24),
-                    lenght = BitConverter.ToSingle(_stream, curveBaseOffset + 0x44),
+                    idNode = BitConverter.ToInt32(_stream, curveBaseOffset + 0x0C), // 12
+                    start_X = BitConverter.ToSingle(_stream, curveBaseOffset + 0x10), // 16
+                    start_Y = BitConverter.ToSingle(_stream, curveBaseOffset + 0x14), // 20
+                    start_Z = BitConverter.ToSingle(_stream, curveBaseOffset + 0x18), // 24
+                    end_X = BitConverter.ToSingle(_stream, curveBaseOffset + 0x1C), // 28
+                    end_Y = BitConverter.ToSingle(_stream, curveBaseOffset + 0x20), // 32
+                    end_Z = BitConverter.ToSingle(_stream, curveBaseOffset + 0x24), // 36
+                    lenght = BitConverter.ToSingle(_stream, curveBaseOffset + 0x44), // 68
                     nextLines = nextLinesList,
                     prevLines = prevLinesList
                 };
