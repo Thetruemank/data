@@ -10,8 +10,10 @@ namespace TsMap
     {
         public int id;
         public float X;
+        public float Y;
         public float Z;
         public float RotX;
+        public float RotY;
         public float RotZ;
         public int LaneCount;
         public List<int> InputPoints;
@@ -21,6 +23,7 @@ namespace TsMap
     public struct TsMapPoint
     {
         public float X;
+        public float Y;
         public float Z;
         public int LaneOffset;
         public int LaneCount;
@@ -34,6 +37,7 @@ namespace TsMap
     public class TsSpawnPoint
     {
         public float X;
+        public float Y;
         public float Z;
         public TsSpawnPointType Type;
         public uint Unk; /* from version 24 */
@@ -44,6 +48,7 @@ namespace TsMap
         public uint TriggerId;
         public ulong TriggerActionToken;
         public float X;
+        public float Y;
         public float Z;
     }
 
@@ -164,8 +169,10 @@ namespace TsMap
                 {
                     id = i,
                     X = MemoryHelper.ReadSingle(_stream, nodeBaseOffset + 0x10),
+                    Y = MemoryHelper.ReadSingle(_stream, nodeBaseOffset + 0x14),
                     Z = MemoryHelper.ReadSingle(_stream, nodeBaseOffset + 0x18),
                     RotX = MemoryHelper.ReadSingle(_stream, nodeBaseOffset + 0x1C),
+                    RotY = MemoryHelper.ReadSingle(_stream, nodeBaseOffset + 0x20),
                     RotZ = MemoryHelper.ReadSingle(_stream, nodeBaseOffset + 0x24),
                     InputPoints = listInput,
                     OutputPoints = listOutput
@@ -228,6 +235,7 @@ namespace TsMap
                 var spawnPoint = new TsSpawnPoint
                 {
                     X = MemoryHelper.ReadSingle(_stream, spawnPointBaseOffset),
+                    Y = MemoryHelper.ReadSingle(_stream, spawnPointBaseOffset + 0x04),
                     Z = MemoryHelper.ReadSingle(_stream, spawnPointBaseOffset + 0x08),
                     Type = (TsSpawnPointType)MemoryHelper.ReadUInt32(_stream, spawnPointBaseOffset + 0x1C)
                 };
@@ -287,7 +295,7 @@ namespace TsMap
                         float distanceLength = 0.0f;
                         while (actualCurve.id != -1)
                         {
-                            distanceLength += (float)Math.Sqrt(Math.Pow(actualCurve.start_X - actualCurve.end_X, 2) + Math.Pow(actualCurve.start_Z - actualCurve.end_Z, 2));
+                            distanceLength += (float)Math.Sqrt(Math.Pow(actualCurve.start_X - actualCurve.end_X, 2) + Math.Pow(actualCurve.start_Y - actualCurve.end_Y, 2) + Math.Pow(actualCurve.start_Z - actualCurve.end_Z, 2));
                             ActualCurves.Add(actualCurve);
                             path.Add(actualCurve);
                             actualCurve = distances[actualCurve].Item2;
@@ -357,6 +365,7 @@ namespace TsMap
                     Hidden = hidden,
                     PrefabColorFlags = prefabColorFlags,
                     X = MemoryHelper.ReadSingle(_stream, mapPointBaseOffset + 0x08),
+                    Y = MemoryHelper.ReadSingle(_stream, mapPointBaseOffset + 0x0C),
                     Z = MemoryHelper.ReadSingle(_stream, mapPointBaseOffset + 0x10),
                     Neighbours = new List<int>(),
                     NeighbourCount = MemoryHelper.ReadInt32(_stream, mapPointBaseOffset + 0x14 + (0x04 * 6)),
@@ -379,6 +388,7 @@ namespace TsMap
                     TriggerId = MemoryHelper.ReadUInt32(_stream, triggerPointBaseOffset),
                     TriggerActionToken = MemoryHelper.ReadUInt64(_stream, triggerPointBaseOffset + 0x04),
                     X = MemoryHelper.ReadSingle(_stream, triggerPointBaseOffset + 0x1C),
+                    Y = MemoryHelper.ReadSingle(_stream, triggerPointBaseOffset + 0x20),
                     Z = MemoryHelper.ReadSingle(_stream, triggerPointBaseOffset + 0x24),
                 };
                 TriggerPoints.Add(triggerPoint);
