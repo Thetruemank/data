@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Linq;
+using System.Runtime.InteropServices;
+using System.Security.Policy;
 using TsMap.Common;
 using TsMap.Helpers;
 using TsMap.Helpers.Logger;
@@ -14,7 +16,6 @@ namespace TsMap
     {
         private readonly TsMapper _mapper;
         private const float itemDrawMargin = 1000f;
-
         private int[] zoomCaps = { 1000, 5000, 18500, 45000 };
 
         private readonly Font _defaultFont = new Font("Arial", 10.0f, FontStyle.Bold);
@@ -255,31 +256,173 @@ namespace TsMap
 
                         bool navPrefContains = _mapper.RoutePrefabs.Contains(prefabItem);
 
-                        for (int i = 0; i < prefabItem.Prefab.PrefabCurves.Count; i++)
+                        List<TsPrefabCurve> CurvesAdded = new List<TsPrefabCurve>();
+                        // This will recursively traverse the prefab curves and add them to the lanes
+                        // Basically it will spit out a list of:
+                        // StartCurve -> Curve1 -> Curve2 -> ... -> EndCurve
+                        List<List<TsPrefabCurve>> TraverseCurveTillEnd(TsPrefabCurve curve, List<TsPrefabCurve> curves, HashSet<int> visited = null)
                         {
-                            var newPointStart = RenderHelper.RotatePoint(prefabStartX + prefabItem.Prefab.PrefabCurves[i].start_X, prefabStartZ + prefabItem.Prefab.PrefabCurves[i].start_Z, rot, originNode.X, originNode.Z);
-                            var newPointEnd = RenderHelper.RotatePoint(prefabStartX + prefabItem.Prefab.PrefabCurves[i].end_X, prefabStartZ + prefabItem.Prefab.PrefabCurves[i].end_Z, rot, originNode.X, originNode.Z);
-                            var color = Brushes.Red;
-                            var zind = 1000;
-
-                            if ((_mapper.PrefabNav.ContainsKey(prefabItem) && _mapper.PrefabNav.ContainsKey(prefabItem) && _mapper.PrefabNav[prefabItem].Contains(prefabItem.Prefab.PrefabCurves[i])) || _mapper.RoutePrefabs.Contains(prefabItem))
+                            if (visited == null)
                             {
-                                color = Brushes.Red;
-                                zind = 1000;
+                                visited = new HashSet<int>();
                             }
 
+                            List<List<TsPrefabCurve>> lanes = new List<List<TsPrefabCurve>>();
+
+                            // Add the current curve's id to the visited set
+                            visited.Add(curve.id);
+
+                            if(curve.nextLines.Count == 0)
+                            {
+                                lanes.Add(new List<TsPrefabCurve> { curve });
+                                CurvesAdded.Add(curve);
+                            }
+                            else
+                            {
+                                for(int i = 0; i < curve.nextLines.Count; i++)
+                                {
+                                    var nextCurve = curves[curve.nextLines[i]];
+
+                                    // If the next curve has already been visited, skip it
+                                    if (visited.Contains(nextCurve.id))
+                                    {
+                                        continue;
+                                    }
+
+                                    List<List<TsPrefabCurve>> nextLanes = TraverseCurveTillEnd(nextCurve, curves, new HashSet<int>(visited));
+                                    foreach (var lane in nextLanes)
+                                    {
+                                        lane.Insert(0, curve);
+                                        lanes.Add(lane);
+                                        CurvesAdded.Add(curve);
+                                    }
+                                }
+                            }
+
+                            return lanes;
+                        }
+
+                        // List<List<TsPrefabCurve>> TraverseCurveTillStart(TsPrefabCurve curve, List<TsPrefabCurve> curves, HashSet<int> visited = null)
+                        // {
+                        //     if (visited == null)
+                        //     {
+                        //         visited = new HashSet<int>();
+                        //     }
+                        // 
+                        //     List<List<TsPrefabCurve>> lanes = new List<List<TsPrefabCurve>>();
+                        // 
+                        //     // Add the current curve's id to the visited set
+                        //     visited.Add(curve.id);
+                        // 
+                        //     if(curve.prevLines.Count == 0)
+                        //     {
+                        //         lanes.Add(new List<TsPrefabCurve> { curve });
+                        //         CurvesAdded.Add(curve);
+                        //     }
+                        //     else
+                        //     {
+                        //         for(int i = 0; i < curve.prevLines.Count; i++)
+                        //         {
+                        //             var prevCurve = curves[curve.prevLines[i]];
+                        // 
+                        //             // If the previous curve has already been visited, skip it
+                        //             if (visited.Contains(prevCurve.id))
+                        //             {
+                        //                 continue;
+                        //             }
+                        // 
+                        //             List<List<TsPrefabCurve>> prevLanes = TraverseCurveTillStart(prevCurve, curves, new HashSet<int>(visited));
+                        //             foreach (var lane in prevLanes)
+                        //             {
+                        //                 lane.Add(curve);
+                        //                 lanes.Add(lane);
+                        //                 CurvesAdded.Add(curve);
+                        //             }
+                        //         }
+                        //     }
+                        // 
+                        //     return lanes;
+                        // }
+
+                        List<List<TsPrefabCurve>> Lanes = new List<List<TsPrefabCurve>>();
+                        for(int i = 0; i < prefabItem.Prefab.PrefabCurves.Count; i++)
+                        {
+                            var curve = prefabItem.Prefab.PrefabCurves[i];
+
+                            if(curve.prevLines.Count == 0 && curve.nextLines.Count > 0)
+                            {
+                                List<List<TsPrefabCurve>> lanes = TraverseCurveTillEnd(curve, prefabItem.Prefab.PrefabCurves);
+                                Lanes.AddRange(lanes);
+                            }
+                            else if(curve.prevLines.Count > 0 && curve.nextLines.Count == 0)
+                            {
+                                // This wasn't needed after all. Will keep it here just in case.
+                                //List<List<TsPrefabCurve>> lanes = TraverseCurveTillStart(curve, prefabItem.Prefab.PrefabCurves);
+                                //Lanes.AddRange(lanes);
+                            }
+                            else if (curve.prevLines.Count == 0 && curve.nextLines.Count == 0)
+                            {
+                                // Bro is lonely...
+                                Lanes.Add(new List<TsPrefabCurve> { curve });
+                            }
+                        }
+
+                        Lanes = Lanes
+                            .GroupBy(lane => String.Join(",", lane.Select(curve => curve.id)))
+                            .Select(group => group.First())
+                            .ToList();
+
+                        // For some reason not all curves are being added to the lanes
+                        // TODO: Figure out why this is the case so we can remove this hack!
+                        // for(int i = 0; i < prefabItem.Prefab.PrefabCurves.Count; i++)
+                        // {
+                        //     if(CurvesAdded.Contains(prefabItem.Prefab.PrefabCurves[i])) continue;
+                        // 
+                        //     Lanes.Add(new List<TsPrefabCurve> { prefabItem.Prefab.PrefabCurves[i] });
+                        // }
+
+                        if(Lanes.Count == 0) continue;
+
+                        // Debug rendering for lane routes.
+                        var currentLaneToRender = DateTime.Now.Second;
+                        while (currentLaneToRender > Lanes.Count)
+                        {
+                            currentLaneToRender -= Lanes.Count;
+                        }
+                        currentLaneToRender = -1; // Render all lanes at once
+                        
+                        for (int i = 0; i < Lanes.Count; i++)
+                        {
+                            var color = Brushes.Red;
+                            if (i % 2 == 0)
+                            {
+                                color = Brushes.Blue;
+                            }
+                        
                             TsPrefabLook prefabLook = new TsPrefabRoadLook()
                             {
                                 Color = color,
                                 Width = 1f,
-                                ZIndex = zind
+                                ZIndex = 1000
                             };
-
-                            prefabLook.AddPoint((newPointStart.X ), (newPointStart.Y ));
-                            prefabLook.AddPoint((newPointEnd.X ), (newPointEnd.Y ));
-
+                        
+                        
+                            if(i != currentLaneToRender && currentLaneToRender != -1) continue;
+                            
+                            for (int j = 0; j < Lanes[i].Count; j++)
+                            {
+                                var curveStartPoint = RenderHelper.RotatePoint(prefabStartX + Lanes[i][j].start_X, prefabStartZ + Lanes[i][j].start_Z, rot, originNode.X, originNode.Z);
+                                var curveEndPoint = RenderHelper.RotatePoint(prefabStartX + Lanes[i][j].end_X, prefabStartZ + Lanes[i][j].end_Z, rot, originNode.X, originNode.Z);
+                                prefabLook.AddPoint(curveStartPoint.X, curveStartPoint.Y);
+                                prefabLook.AddPoint(curveEndPoint.X, curveEndPoint.Y);
+                            }
+                        
                             drawingQueue.Add(prefabLook);
                         }
+
+                        // Some sort of bezier logic
+                        int resolution = 5; // How many points each bezier has
+                        
                     }
 
                     prefabItem.GetLooks().ForEach(x => drawingQueue.Add(x));
