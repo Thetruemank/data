@@ -81,6 +81,7 @@ namespace TsMap
                     Valid = p.Valid,
                     Type = p.Type,
                     X = p.X,
+                    Y = p.Y,
                     Z = p.Z,
                     Hidden = p.Hidden,
                     Flags = p.Flags,
@@ -269,6 +270,7 @@ namespace TsMap
 
             public TsItemType Type;
             public float X;
+            public float Y;
             public float Z;
             public bool Hidden;
 

@@ -328,6 +328,7 @@ namespace TsMap.TsItem
 
             var prefabStartX = originNode.X - mapPointOrigin.X;
             var prefabStartZ = originNode.Z - mapPointOrigin.Z;
+            var prefabStartY = originNode.Y - mapPointOrigin.Y;
             foreach (var spawnPoint in Prefab.SpawnPoints)
             {
                 var newPoint = RenderHelper.RotatePoint(prefabStartX + spawnPoint.X, prefabStartZ + spawnPoint.Z, rot,
@@ -390,7 +391,7 @@ namespace TsMap.TsItem
             }
 
             // Load the correct positions for the curves
-            curvePoints = new float[Prefab.PrefabCurves.Count,4];
+            curvePoints = new float[Prefab.PrefabCurves.Count,6];
             for (int i = 0; i < Prefab.PrefabCurves.Count; i++)
             {
                 var newPointStart = RenderHelper.RotatePoint(prefabStartX + Prefab.PrefabCurves[i].start_X, prefabStartZ + Prefab.PrefabCurves[i].start_Z, rot, originNode.X, originNode.Z);
@@ -401,6 +402,8 @@ namespace TsMap.TsItem
                 curvePoints[i, 1] = newPointStart.Y;
                 curvePoints[i, 2] = newPointEnd.X;
                 curvePoints[i, 3] = newPointEnd.Y;
+                curvePoints[i, 4] = prefabStartY + Prefab.PrefabCurves[i].start_Y;
+                curvePoints[i, 5] = prefabStartY + Prefab.PrefabCurves[i].end_Y;
             }
         }
     }

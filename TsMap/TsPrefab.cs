@@ -62,6 +62,12 @@ namespace TsMap
         public float end_X;
         public float end_Y;
         public float end_Z;
+        public float start_rot_X;
+        public float start_rot_Y;
+        public float start_rot_Z;
+        public float end_rot_X;
+        public float end_rot_Y;
+        public float end_rot_Z;
         public float lenght;
         public List<int> nextLines;
         public List<int> prevLines;
@@ -213,14 +219,20 @@ namespace TsMap
                 var curve = new TsPrefabCurve
                 {
                     id = i,
-                    idNode = BitConverter.ToInt32(_stream, curveBaseOffset + 0x0C), // 12
-                    start_X = BitConverter.ToSingle(_stream, curveBaseOffset + 0x10), // 16
-                    start_Y = BitConverter.ToSingle(_stream, curveBaseOffset + 0x14), // 20
-                    start_Z = BitConverter.ToSingle(_stream, curveBaseOffset + 0x18), // 24
-                    end_X = BitConverter.ToSingle(_stream, curveBaseOffset + 0x1C), // 28
-                    end_Y = BitConverter.ToSingle(_stream, curveBaseOffset + 0x20), // 32
-                    end_Z = BitConverter.ToSingle(_stream, curveBaseOffset + 0x24), // 36
-                    lenght = BitConverter.ToSingle(_stream, curveBaseOffset + 0x44), // 68
+                    idNode = BitConverter.ToInt32(_stream, curveBaseOffset + 12),
+                    start_X = BitConverter.ToSingle(_stream, curveBaseOffset + 16),
+                    start_Y = BitConverter.ToSingle(_stream, curveBaseOffset + 20),
+                    start_Z = BitConverter.ToSingle(_stream, curveBaseOffset + 24),
+                    end_X = BitConverter.ToSingle(_stream, curveBaseOffset + 28),
+                    end_Y = BitConverter.ToSingle(_stream, curveBaseOffset + 32),
+                    end_Z = BitConverter.ToSingle(_stream, curveBaseOffset + 36),
+                    start_rot_X = BitConverter.ToSingle(_stream, curveBaseOffset + 40),
+                    start_rot_Y = BitConverter.ToSingle(_stream, curveBaseOffset + 44),
+                    start_rot_Z = BitConverter.ToSingle(_stream, curveBaseOffset + 48),
+                    end_rot_X = BitConverter.ToSingle(_stream, curveBaseOffset + 52),
+                    end_rot_Y = BitConverter.ToSingle(_stream, curveBaseOffset + 56),
+                    end_rot_Z = BitConverter.ToSingle(_stream, curveBaseOffset + 60),
+                    lenght = BitConverter.ToSingle(_stream, curveBaseOffset + 68),
                     nextLines = nextLinesList,
                     prevLines = prevLinesList
                 };
