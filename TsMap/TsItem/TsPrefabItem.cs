@@ -14,6 +14,8 @@ namespace TsMap.TsItem
         private const int NodeLookBlockSize = 0x3A;
         private const int NodeLookBlockSize825 = 0x38;
         private const int PrefabVegetationBlockSize = 0x20;
+        private const double PREFAB_QUALITY = 0.5; // Points per meter
+        private const int MIN_QUALITY = 2; // Need two points to make a line
         public ulong FerryUid { get; private set; }
         public int Origin { get; private set; }
         public int Padding { get; private set; }
@@ -23,7 +25,7 @@ namespace TsMap.TsItem
 
         public bool IsSecret { get; private set; }
 
-        public float[,] curvePoints { get; private set; }
+        public List<List<double[]>> curvePoints { get; private set; }
 
         public void AddLook(TsPrefabLook look)
         {
@@ -316,6 +318,16 @@ namespace TsMap.TsItem
             return Math.Abs(this.X - item.X) + Math.Abs(this.Z - item.Z);
         }
 
+        // Copied from TsRoadLook.cs... used for the prefab curve calculations.
+        public static double Hermite(float s, float x, float z, double tanX, double tanZ)
+        {
+            double h1 = 2 * Math.Pow(s, 3) - 3 * Math.Pow(s, 2) + 1;
+            double h2 = -2 * Math.Pow(s, 3) + 3 * Math.Pow(s, 2);
+            double h3 = Math.Pow(s, 3) - 2 * Math.Pow(s, 2) + s;
+            double h4 = Math.Pow(s, 3) - Math.Pow(s, 2);
+            return h1 * x + h2 * z + h3 * tanX + h4 * tanZ;
+        }
+
         internal override void Update()
         {
             var originNode = Sector.Mapper.GetNodeByUid(Nodes[0]);
@@ -391,19 +403,57 @@ namespace TsMap.TsItem
             }
 
             // Load the correct positions for the curves
-            curvePoints = new float[Prefab.PrefabCurves.Count,6];
+            curvePoints = new List<List<double[]>>();
             for (int i = 0; i < Prefab.PrefabCurves.Count; i++)
             {
                 var newPointStart = RenderHelper.RotatePoint(prefabStartX + Prefab.PrefabCurves[i].start_X, prefabStartZ + Prefab.PrefabCurves[i].start_Z, rot, originNode.X, originNode.Z);
                 var newPointEnd = RenderHelper.RotatePoint(prefabStartX + Prefab.PrefabCurves[i].end_X, prefabStartZ + Prefab.PrefabCurves[i].end_Z, rot, originNode.X, originNode.Z);
 
+                var currentCurvePoints = new List<double[]>();
 
-                curvePoints[i, 0] = newPointStart.X;
-                curvePoints[i, 1] = newPointStart.Y;
-                curvePoints[i, 2] = newPointEnd.X;
-                curvePoints[i, 3] = newPointEnd.Y;
-                curvePoints[i, 4] = prefabStartY + Prefab.PrefabCurves[i].start_Y;
-                curvePoints[i, 5] = prefabStartY + Prefab.PrefabCurves[i].end_Y;
+                float sx = newPointStart.X;
+                float sy = Prefab.PrefabCurves[i].start_Y;
+                float sz = newPointStart.Y;
+                float ex = newPointEnd.X;
+                float ey = Prefab.PrefabCurves[i].end_Y;
+                float ez = newPointEnd.Y;
+
+                float srx = Prefab.PrefabCurves[i].start_rot_X;
+                float srz = Prefab.PrefabCurves[i].start_rot_Z;
+                float erx = Prefab.PrefabCurves[i].end_rot_X;
+                float erz = Prefab.PrefabCurves[i].end_rot_Z;
+
+                var startRot = Math.PI - Math.Atan2(srz, srx);
+                startRot = startRot % (Math.PI * 2);
+                var endRot = Math.PI - Math.Atan2(erz, erx);
+                endRot = endRot % (Math.PI * 2);
+
+                var length = Math.Sqrt(Math.Pow(sx - ex, 2) + Math.Pow(sy - ey, 2) + Math.Pow(sz - ez, 2));
+                var radius = Math.Sqrt(Math.Pow(sx - ex, 2) + Math.Pow(sz - ez, 2));
+
+                var tanSx = Math.Cos(-(Math.PI * 0.5 - startRot)) * radius;
+                var tanEx = Math.Cos(-(Math.PI * 0.5 - endRot)) * radius;
+                var tanSz = Math.Sin(-(Math.PI * 0.5 - startRot)) * radius;
+                var tanEz = Math.Sin(-(Math.PI * 0.5 - endRot)) * radius;
+
+                var neededPoints = Math.Round(length * PREFAB_QUALITY);
+                if(neededPoints < MIN_QUALITY)
+                {
+                    neededPoints = MIN_QUALITY;
+                }
+
+                for (int j = 0; j < neededPoints; j++)
+                {
+                    float s = j / (float)(neededPoints - 1);
+                    double[] point = new double[3];
+                    point[0] = Hermite(s, sx, ex, tanSx, tanEx);
+                    point[2] = Hermite(s, sz, ez, tanSz, tanEz);
+                    point[1] = sy + (ey - sy) * s;
+                    currentCurvePoints.Add(point);
+                }
+
+
+                curvePoints.Add(currentCurvePoints);
             }
         }
     }

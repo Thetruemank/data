@@ -286,7 +286,7 @@ namespace TsMap
 
             public bool IsSecret;
 
-            public float[,] curvePoints;
+            public List<List<double[]>> curvePoints;
         }
 
         public class RoadModel
