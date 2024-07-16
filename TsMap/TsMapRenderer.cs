@@ -345,7 +345,12 @@ namespace TsMap
                         // }
 
                         List<List<TsPrefabCurve>> Lanes = new List<List<TsPrefabCurve>>();
-                        for(int i = 0; i < prefabItem.Prefab.PrefabCurves.Count; i++)
+                        // ^ This array is in the following format:
+                        // List <
+                        //  StartCurve -> Curve1 -> Curve2 -> ... -> EndCurve
+                        // >
+
+                        for (int i = 0; i < prefabItem.Prefab.PrefabCurves.Count; i++)
                         {
                             var curve = prefabItem.Prefab.PrefabCurves[i];
 
@@ -381,7 +386,7 @@ namespace TsMap
                         {
                             currentLaneToRender -= Lanes.Count;
                         }
-                        currentLaneToRender = -1; // Render all lanes at once
+                        currentLaneToRender = -1; // Render all lanes at once instead of changing it each second.
                         
                         for (int i = 0; i < Lanes.Count; i++)
                         {
