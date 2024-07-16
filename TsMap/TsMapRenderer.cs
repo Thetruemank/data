@@ -362,7 +362,7 @@ namespace TsMap
                             }
                             else if (curve.prevLines.Count == 0 && curve.nextLines.Count == 0)
                             {
-                                // Bro is lonely...
+                                // This means that the prefab only has a start and an end point.
                                 Lanes.Add(new List<TsPrefabCurve> { curve });
                             }
                         }
@@ -372,14 +372,6 @@ namespace TsMap
                             .Select(group => group.First())
                             .ToList();
 
-                        // For some reason not all curves are being added to the lanes
-                        // TODO: Figure out why this is the case so we can remove this hack!
-                        // for(int i = 0; i < prefabItem.Prefab.PrefabCurves.Count; i++)
-                        // {
-                        //     if(CurvesAdded.Contains(prefabItem.Prefab.PrefabCurves[i])) continue;
-                        // 
-                        //     Lanes.Add(new List<TsPrefabCurve> { prefabItem.Prefab.PrefabCurves[i] });
-                        // }
 
                         if(Lanes.Count == 0) continue;
 
@@ -420,8 +412,9 @@ namespace TsMap
                             drawingQueue.Add(prefabLook);
                         }
 
-                        // Some sort of bezier logic
                         int resolution = 5; // How many points each bezier has
+
+                        // TODO: Add bezier drawing logic here!
                         
                     }
 
