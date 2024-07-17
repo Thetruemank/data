@@ -9,6 +9,7 @@ using TsMap.Common;
 using TsMap.Helpers;
 using TsMap.Helpers.Logger;
 using TsMap.Map.Overlays;
+using TsMap.TsItem;
 
 namespace TsMap
 {
@@ -381,46 +382,115 @@ namespace TsMap
                         if(Lanes.Count == 0) continue;
 
                         // Debug rendering for lane routes.
-                        var currentLaneToRender = DateTime.Now.Second;
-                        while (currentLaneToRender > Lanes.Count)
+                        // var currentLaneToRender = DateTime.Now.Second;
+                        // while (currentLaneToRender > Lanes.Count)
+                        // {
+                        //     currentLaneToRender -= Lanes.Count;
+                        // }
+                        // currentLaneToRender = -1; // Render all lanes at once instead of changing it each second.
+                        // 
+                        // for (int i = 0; i < Lanes.Count; i++)
+                        // {
+                        //     var color = Brushes.Red;
+                        //     if (i % 2 == 0)
+                        //     {
+                        //         color = Brushes.Blue;
+                        //     }
+                        // 
+                        //     TsPrefabLook prefabLook = new TsPrefabRoadLook()
+                        //     {
+                        //         Color = color,
+                        //         Width = 1f,
+                        //         ZIndex = 1000
+                        //     };
+                        // 
+                        // 
+                        //     if(i != currentLaneToRender && currentLaneToRender != -1) continue;
+                        //     
+                        //     for (int j = 0; j < Lanes[i].Count; j++)
+                        //     {
+                        //         var curveStartPoint = RenderHelper.RotatePoint(prefabStartX + Lanes[i][j].start_X, prefabStartZ + Lanes[i][j].start_Z, rot, originNode.X, originNode.Z);
+                        //         var curveEndPoint = RenderHelper.RotatePoint(prefabStartX + Lanes[i][j].end_X, prefabStartZ + Lanes[i][j].end_Z, rot, originNode.X, originNode.Z);
+                        //         prefabLook.AddPoint(curveStartPoint.X, curveStartPoint.Y);
+                        //         prefabLook.AddPoint(curveEndPoint.X, curveEndPoint.Y);
+                        //     }
+                        // 
+                        //     drawingQueue.Add(prefabLook);
+                        // }
+                        // 
+                        // int resolution = 5; // How many points each bezier has
+
+                        // TODO: Add bezier drawing logic here!
+                        for(int i = 0; i < Lanes.Count; i++)
                         {
-                            currentLaneToRender -= Lanes.Count;
-                        }
-                        currentLaneToRender = -1; // Render all lanes at once instead of changing it each second.
-                        
-                        for (int i = 0; i < Lanes.Count; i++)
-                        {
-                            var color = Brushes.Red;
-                            if (i % 2 == 0)
+                            List<PointF> anchor = new List<PointF>();
+
+                            foreach(TsPrefabCurve curve in Lanes[i])
                             {
-                                color = Brushes.Blue;
+                                if(anchor.Count == 0)
+                                {
+                                    var curveStartPoint = RenderHelper.RotatePoint(prefabStartX + curve.start_X, prefabStartZ + curve.start_Z, rot, originNode.X, originNode.Z);
+                                    var curveEndPoint = RenderHelper.RotatePoint(prefabStartX + curve.end_X, prefabStartZ + curve.end_Z, rot, originNode.X, originNode.Z);
+                                    anchor.Add(curveStartPoint);
+                                    anchor.Add(curveEndPoint);
+                                } else 
+                                {
+                                    var curveEndPoint = RenderHelper.RotatePoint(prefabStartX + curve.end_X, prefabStartZ + curve.end_Z, rot, originNode.X, originNode.Z);
+                                    anchor.Add(curveEndPoint);
+                                }
                             }
-                        
+
+                            List<PointF> point = new List<PointF>();
+
+                            void GetPathPoints()
+                            {
+                                PointF[] temp_1 = new PointF[anchor.Count];
+                                for (int j = 0; j < temp_1.Length; j++)
+                                {//Get the anchor point coordinates
+                                    temp_1[j] = anchor[j];
+                                }
+                                point = new List<PointF>();//The linked list set of points on the final Bezier curve
+                                float pointNumber = 10;//The number of points on the Bezier curve
+                                PointF[] temp_2;
+                                PointF[] temp_3;
+                                for (int pointIndex = 0; pointIndex <= (int)pointNumber; pointIndex++)
+                                {
+                                    temp_3 = temp_1;
+                                    for (int j = temp_3.Length - 1; j > 0; j--)
+                                    {
+                                        temp_2 = new PointF[j];
+                                        for (int k = 0; k < j; k++)
+                                        {
+                                            temp_2[k] =  new PointF(temp_3[k].X + (temp_3[k + 1].X - temp_3[k].X) * pointIndex / pointNumber, temp_3[k].Y + (temp_3[k + 1].Y - temp_3[k].Y) * pointIndex / pointNumber);
+                                        }
+                                        temp_3 = temp_2;
+                                    }
+                                    PointF find = temp_3[0];
+                                    point.Add(find);
+                                }
+                            }
+
+                            GetPathPoints();
+
+                            var color = Brushes.Red;
+                            if (i % 2 == 0) color = Brushes.Orange;
+
                             TsPrefabLook prefabLook = new TsPrefabRoadLook()
                             {
                                 Color = color,
                                 Width = 1f,
                                 ZIndex = 1000
                             };
-                        
-                        
-                            if(i != currentLaneToRender && currentLaneToRender != -1) continue;
-                            
-                            for (int j = 0; j < Lanes[i].Count; j++)
+
+                            foreach (var p in point)
                             {
-                                var curveStartPoint = RenderHelper.RotatePoint(prefabStartX + Lanes[i][j].start_X, prefabStartZ + Lanes[i][j].start_Z, rot, originNode.X, originNode.Z);
-                                var curveEndPoint = RenderHelper.RotatePoint(prefabStartX + Lanes[i][j].end_X, prefabStartZ + Lanes[i][j].end_Z, rot, originNode.X, originNode.Z);
-                                prefabLook.AddPoint(curveStartPoint.X, curveStartPoint.Y);
-                                prefabLook.AddPoint(curveEndPoint.X, curveEndPoint.Y);
+                                prefabLook.AddPoint(p.X, p.Y);
                             }
-                        
+
                             drawingQueue.Add(prefabLook);
                         }
 
-                        int resolution = 5; // How many points each bezier has
 
-                        // TODO: Add bezier drawing logic here!
-                        
                     }
 
                     prefabItem.GetLooks().ForEach(x => drawingQueue.Add(x));
