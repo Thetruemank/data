@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Linq;
+using System.Reflection.Emit;
 using System.Runtime.InteropServices;
 using System.Security.Policy;
 using TsMap.Common;
@@ -303,48 +304,6 @@ namespace TsMap
                             return lanes;
                         }
 
-                        // List<List<TsPrefabCurve>> TraverseCurveTillStart(TsPrefabCurve curve, List<TsPrefabCurve> curves, HashSet<int> visited = null)
-                        // {
-                        //     if (visited == null)
-                        //     {
-                        //         visited = new HashSet<int>();
-                        //     }
-                        // 
-                        //     List<List<TsPrefabCurve>> lanes = new List<List<TsPrefabCurve>>();
-                        // 
-                        //     // Add the current curve's id to the visited set
-                        //     visited.Add(curve.id);
-                        // 
-                        //     if(curve.prevLines.Count == 0)
-                        //     {
-                        //         lanes.Add(new List<TsPrefabCurve> { curve });
-                        //         CurvesAdded.Add(curve);
-                        //     }
-                        //     else
-                        //     {
-                        //         for(int i = 0; i < curve.prevLines.Count; i++)
-                        //         {
-                        //             var prevCurve = curves[curve.prevLines[i]];
-                        // 
-                        //             // If the previous curve has already been visited, skip it
-                        //             if (visited.Contains(prevCurve.id))
-                        //             {
-                        //                 continue;
-                        //             }
-                        // 
-                        //             List<List<TsPrefabCurve>> prevLanes = TraverseCurveTillStart(prevCurve, curves, new HashSet<int>(visited));
-                        //             foreach (var lane in prevLanes)
-                        //             {
-                        //                 lane.Add(curve);
-                        //                 lanes.Add(lane);
-                        //                 CurvesAdded.Add(curve);
-                        //             }
-                        //         }
-                        //     }
-                        // 
-                        //     return lanes;
-                        // }
-
                         List<List<TsPrefabCurve>> Lanes = new List<List<TsPrefabCurve>>();
                         // ^ This array is in the following format:
                         // List <
@@ -359,12 +318,6 @@ namespace TsMap
                             {
                                 List<List<TsPrefabCurve>> lanes = TraverseCurveTillEnd(curve, prefabItem.Prefab.PrefabCurves);
                                 Lanes.AddRange(lanes);
-                            }
-                            else if(curve.prevLines.Count > 0 && curve.nextLines.Count == 0)
-                            {
-                                // This wasn't needed after all. Will keep it here just in case.
-                                //List<List<TsPrefabCurve>> lanes = TraverseCurveTillStart(curve, prefabItem.Prefab.PrefabCurves);
-                                //Lanes.AddRange(lanes);
                             }
                             else if (curve.prevLines.Count == 0 && curve.nextLines.Count == 0)
                             {
@@ -417,80 +370,79 @@ namespace TsMap
                         // 
                         //     drawingQueue.Add(prefabLook);
                         // }
-                        // 
-                        // int resolution = 5; // How many points each bezier has
+                        
+                        Logger.Instance.Info($"Lanes: {Lanes.Count}");
 
-                        // TODO: Add bezier drawing logic here!
-                        for(int i = 0; i < Lanes.Count; i++)
+                        // Catmull-Rom spline implementation
+                        for (int i = 0; i < Lanes.Count; i++)
                         {
-                            List<PointF> anchor = new List<PointF>();
-
-                            foreach(TsPrefabCurve curve in Lanes[i])
-                            {
-                                if(anchor.Count == 0)
-                                {
-                                    var curveStartPoint = RenderHelper.RotatePoint(prefabStartX + curve.start_X, prefabStartZ + curve.start_Z, rot, originNode.X, originNode.Z);
-                                    var curveEndPoint = RenderHelper.RotatePoint(prefabStartX + curve.end_X, prefabStartZ + curve.end_Z, rot, originNode.X, originNode.Z);
-                                    anchor.Add(curveStartPoint);
-                                    anchor.Add(curveEndPoint);
-                                } else 
-                                {
-                                    var curveEndPoint = RenderHelper.RotatePoint(prefabStartX + curve.end_X, prefabStartZ + curve.end_Z, rot, originNode.X, originNode.Z);
-                                    anchor.Add(curveEndPoint);
-                                }
-                            }
-
-                            List<PointF> point = new List<PointF>();
-
-                            void GetPathPoints()
-                            {
-                                PointF[] temp_1 = new PointF[anchor.Count];
-                                for (int j = 0; j < temp_1.Length; j++)
-                                {//Get the anchor point coordinates
-                                    temp_1[j] = anchor[j];
-                                }
-                                point = new List<PointF>();//The linked list set of points on the final Bezier curve
-                                float pointNumber = 10;//The number of points on the Bezier curve
-                                PointF[] temp_2;
-                                PointF[] temp_3;
-                                for (int pointIndex = 0; pointIndex <= (int)pointNumber; pointIndex++)
-                                {
-                                    temp_3 = temp_1;
-                                    for (int j = temp_3.Length - 1; j > 0; j--)
-                                    {
-                                        temp_2 = new PointF[j];
-                                        for (int k = 0; k < j; k++)
-                                        {
-                                            temp_2[k] =  new PointF(temp_3[k].X + (temp_3[k + 1].X - temp_3[k].X) * pointIndex / pointNumber, temp_3[k].Y + (temp_3[k + 1].Y - temp_3[k].Y) * pointIndex / pointNumber);
-                                        }
-                                        temp_3 = temp_2;
-                                    }
-                                    PointF find = temp_3[0];
-                                    point.Add(find);
-                                }
-                            }
-
-                            GetPathPoints();
-
-                            var color = Brushes.Red;
-                            if (i % 2 == 0) color = Brushes.Orange;
+                            var lane = Lanes[i];
 
                             TsPrefabLook prefabLook = new TsPrefabRoadLook()
                             {
-                                Color = color,
+                                Color = Brushes.Red, // Choose your color
                                 Width = 1f,
                                 ZIndex = 1000
                             };
 
-                            foreach (var p in point)
-                            {
-                                prefabLook.AddPoint(p.X, p.Y);
-                            }
+                            Logger.Instance.Info($"Lane: {i}");
 
+                            for (int j = 0; j < lane.Count; j++)
+                            {
+
+                                if (lane.Count < 4)
+                                {
+                                    for (int k = 0; k < lane.Count; k++)
+                                    {
+                                        var curveStartPoint = RenderHelper.RotatePoint(prefabStartX + lane[k].start_X, prefabStartZ + lane[k].start_Z, rot, originNode.X, originNode.Z);
+                                        var curveEndPoint = RenderHelper.RotatePoint(prefabStartX + lane[k].end_X, prefabStartZ + lane[k].end_Z, rot, originNode.X, originNode.Z);
+                                        prefabLook.AddPoint(curveStartPoint.X, curveStartPoint.Y);
+                                        prefabLook.AddPoint(curveEndPoint.X, curveEndPoint.Y);
+                                    }
+                                    continue;
+                                }
+
+                                if (j == 0){
+                                    var curveStartPoint = RenderHelper.RotatePoint(prefabStartX + lane[j].start_X, prefabStartZ + lane[j].start_Z, rot, originNode.X, originNode.Z);
+                                    prefabLook.AddPoint(curveStartPoint.X, curveStartPoint.Y);
+                                    continue;
+                                }
+
+                                if (j == lane.Count - 1){
+                                    var curveEndPoint = RenderHelper.RotatePoint(prefabStartX + lane[j].end_X, prefabStartZ + lane[j].end_Z, rot, originNode.X, originNode.Z);
+                                    prefabLook.AddPoint(curveEndPoint.X, curveEndPoint.Y);
+                                    continue;
+                                }
+
+                                var p0 = j == 0 ? lane[j] : lane[j - 1];
+                                var p1 = lane[j];
+                                var p2 = j == lane.Count - 1 ? lane[j] : lane[j + 1];
+                                var p3 = j == lane.Count - 2 ? lane[j] : lane[j + 2];
+
+                                Logger.Instance.Info($"p0: {p0.start_X}, {p0.start_Z}");
+                                Logger.Instance.Info($"p1: {p1.start_X}, {p1.start_Z}");
+                                Logger.Instance.Info($"p2: {p2.start_X}, {p2.start_Z}");
+                                Logger.Instance.Info($"p3: {p3.start_X}, {p3.start_Z}");
+
+                                for (float t = 0; t <= 1; t += 0.05f) // Adjust the step for more/less detail
+                                {
+                                    var x = 0.5f * ((2 * p1.start_X) +
+                                                    (-p0.start_X + p2.start_X) * t +
+                                                    (2 * p0.start_X - 5 * p1.start_X + 4 * p2.start_X - p3.start_X) * t * t +
+                                                    (-p0.start_X + 3 * p1.start_X - 3 * p2.start_X + p3.start_X) * t * t * t);
+
+                                    var z = 0.5f * ((2 * p1.start_Z) +
+                                                    (-p0.start_Z + p2.start_Z) * t +
+                                                    (2 * p0.start_Z - 5 * p1.start_Z + 4 * p2.start_Z - p3.start_Z) * t * t +
+                                                    (-p0.start_Z + 3 * p1.start_Z - 3 * p2.start_Z + p3.start_Z) * t * t * t);
+
+                                    var rotatedPoint = RenderHelper.RotatePoint(prefabStartX + x, prefabStartZ + z, rot, originNode.X, originNode.Z);
+                                    Logger.Instance.Info($"x: {rotatedPoint.X}, y: {rotatedPoint.Y}");
+                                    prefabLook.AddPoint(rotatedPoint.X, rotatedPoint.Y);
+                                }
+                            }
                             drawingQueue.Add(prefabLook);
                         }
-
-
                     }
 
                     prefabItem.GetLooks().ForEach(x => drawingQueue.Add(x));

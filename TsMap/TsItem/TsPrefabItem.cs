@@ -425,8 +425,10 @@ namespace TsMap.TsItem
 
                 var startRot = Math.PI - Math.Atan2(srz, srx);
                 startRot = startRot % (Math.PI * 2);
+                startRot = startRot - rot;
                 var endRot = Math.PI - Math.Atan2(erz, erx);
                 endRot = endRot % (Math.PI * 2);
+                endRot = endRot - rot;
 
                 var length = Math.Sqrt(Math.Pow(sx - ex, 2) + Math.Pow(sy - ey, 2) + Math.Pow(sz - ez, 2));
                 var radius = Math.Sqrt(Math.Pow(sx - ex, 2) + Math.Pow(sz - ez, 2));
