@@ -258,120 +258,13 @@ namespace TsMap
 
                         bool navPrefContains = _mapper.RoutePrefabs.Contains(prefabItem);
 
-                        List<TsPrefabCurve> CurvesAdded = new List<TsPrefabCurve>();
-                        // This will recursively traverse the prefab curves and add them to the lanes
-                        // Basically it will spit out a list of:
-                        // StartCurve -> Curve1 -> Curve2 -> ... -> EndCurve
-                        List<List<TsPrefabCurve>> TraverseCurveTillEnd(TsPrefabCurve curve, List<TsPrefabCurve> curves, HashSet<int> visited = null)
-                        {
-                            if (visited == null)
-                            {
-                                visited = new HashSet<int>();
-                            }
-
-                            List<List<TsPrefabCurve>> lanes = new List<List<TsPrefabCurve>>();
-
-                            // Add the current curve's id to the visited set
-                            visited.Add(curve.id);
-
-                            if(curve.nextLines.Count == 0)
-                            {
-                                lanes.Add(new List<TsPrefabCurve> { curve });
-                                CurvesAdded.Add(curve);
-                            }
-                            else
-                            {
-                                for(int i = 0; i < curve.nextLines.Count; i++)
-                                {
-                                    var nextCurve = curves[curve.nextLines[i]];
-
-                                    // If the next curve has already been visited, skip it
-                                    if (visited.Contains(nextCurve.id))
-                                    {
-                                        continue;
-                                    }
-
-                                    List<List<TsPrefabCurve>> nextLanes = TraverseCurveTillEnd(nextCurve, curves, new HashSet<int>(visited));
-                                    foreach (var lane in nextLanes)
-                                    {
-                                        lane.Insert(0, curve);
-                                        lanes.Add(lane);
-                                        CurvesAdded.Add(curve);
-                                    }
-                                }
-                            }
-
-                            return lanes;
-                        }
-
+                        var LaneObjects = prefabItem.Prefab.Lanes;
                         List<List<TsPrefabCurve>> Lanes = new List<List<TsPrefabCurve>>();
-                        // ^ This array is in the following format:
-                        // List <
-                        //  StartCurve -> Curve1 -> Curve2 -> ... -> EndCurve
-                        // >
 
-                        for (int i = 0; i < prefabItem.Prefab.PrefabCurves.Count; i++)
+                        foreach(TsPrefabLane lane in LaneObjects)
                         {
-                            var curve = prefabItem.Prefab.PrefabCurves[i];
-
-                            if(curve.prevLines.Count == 0 && curve.nextLines.Count > 0)
-                            {
-                                List<List<TsPrefabCurve>> lanes = TraverseCurveTillEnd(curve, prefabItem.Prefab.PrefabCurves);
-                                Lanes.AddRange(lanes);
-                            }
-                            else if (curve.prevLines.Count == 0 && curve.nextLines.Count == 0)
-                            {
-                                // This means that the prefab only has a start and an end point.
-                                Lanes.Add(new List<TsPrefabCurve> { curve });
-                            }
+                            Lanes.Add(lane.curves);
                         }
-
-                        Lanes = Lanes
-                            .GroupBy(lane => String.Join(",", lane.Select(curve => curve.id)))
-                            .Select(group => group.First())
-                            .ToList();
-
-
-                        if(Lanes.Count == 0) continue;
-
-                        // Debug rendering for lane routes.
-                        // var currentLaneToRender = DateTime.Now.Second;
-                        // while (currentLaneToRender > Lanes.Count)
-                        // {
-                        //     currentLaneToRender -= Lanes.Count;
-                        // }
-                        // currentLaneToRender = -1; // Render all lanes at once instead of changing it each second.
-                        // 
-                        // for (int i = 0; i < Lanes.Count; i++)
-                        // {
-                        //     var color = Brushes.Red;
-                        //     if (i % 2 == 0)
-                        //     {
-                        //         color = Brushes.Blue;
-                        //     }
-                        // 
-                        //     TsPrefabLook prefabLook = new TsPrefabRoadLook()
-                        //     {
-                        //         Color = color,
-                        //         Width = 1f,
-                        //         ZIndex = 1000
-                        //     };
-                        // 
-                        // 
-                        //     if(i != currentLaneToRender && currentLaneToRender != -1) continue;
-                        //     
-                        //     for (int j = 0; j < Lanes[i].Count; j++)
-                        //     {
-                        //         var curveStartPoint = RenderHelper.RotatePoint(prefabStartX + Lanes[i][j].start_X, prefabStartZ + Lanes[i][j].start_Z, rot, originNode.X, originNode.Z);
-                        //         var curveEndPoint = RenderHelper.RotatePoint(prefabStartX + Lanes[i][j].end_X, prefabStartZ + Lanes[i][j].end_Z, rot, originNode.X, originNode.Z);
-                        //         prefabLook.AddPoint(curveStartPoint.X, curveStartPoint.Y);
-                        //         prefabLook.AddPoint(curveEndPoint.X, curveEndPoint.Y);
-                        //     }
-                        // 
-                        //     drawingQueue.Add(prefabLook);
-                        // }
-                        
-                        Logger.Instance.Info($"Lanes: {Lanes.Count}");
 
                         // Catmull-Rom spline implementation
                         for (int i = 0; i < Lanes.Count; i++)
@@ -384,8 +277,6 @@ namespace TsMap
                                 Width = 1f,
                                 ZIndex = 1000
                             };
-
-                            Logger.Instance.Info($"Lane: {i}");
 
                             for (int j = 0; j < lane.Count; j++)
                             {
@@ -419,11 +310,6 @@ namespace TsMap
                                 var p2 = j == lane.Count - 1 ? lane[j] : lane[j + 1];
                                 var p3 = j == lane.Count - 2 ? lane[j] : lane[j + 2];
 
-                                Logger.Instance.Info($"p0: {p0.start_X}, {p0.start_Z}");
-                                Logger.Instance.Info($"p1: {p1.start_X}, {p1.start_Z}");
-                                Logger.Instance.Info($"p2: {p2.start_X}, {p2.start_Z}");
-                                Logger.Instance.Info($"p3: {p3.start_X}, {p3.start_Z}");
-
                                 for (float t = 0; t <= 1; t += 0.05f) // Adjust the step for more/less detail
                                 {
                                     var x = 0.5f * ((2 * p1.start_X) +
@@ -437,7 +323,6 @@ namespace TsMap
                                                     (-p0.start_Z + 3 * p1.start_Z - 3 * p2.start_Z + p3.start_Z) * t * t * t);
 
                                     var rotatedPoint = RenderHelper.RotatePoint(prefabStartX + x, prefabStartZ + z, rot, originNode.X, originNode.Z);
-                                    Logger.Instance.Info($"x: {rotatedPoint.X}, y: {rotatedPoint.Y}");
                                     prefabLook.AddPoint(rotatedPoint.X, rotatedPoint.Y);
                                 }
                             }
