@@ -39,7 +39,8 @@ namespace TsMap
                     MapPoints = pref.MapPoints,
                     TriggerPoints = pref.TriggerPoints,
                     PrefabCurves = pref.PrefabCurves,
-                    NavigationRoutes = new Dictionary<string, PrefabNavItem>()
+                    NavigationRoutes = new Dictionary<string, PrefabNavItem>(),
+                    Lanes = pref.Lanes
                 };
                 if (pref.NavigationRoutes != null)
                     foreach (KeyValuePair<Tuple<TsPrefabNode, TsPrefabNode>, Tuple<List<TsPrefabCurve>, float>> kv in pref.NavigationRoutes)
@@ -91,8 +92,7 @@ namespace TsMap
                     Padding = p.Padding,
                     //Origin2 = p.Origin2,
                     Prefab = p.Prefab.Token,
-                    IsSecret = p.IsSecret,
-                    curvePoints = p.curvePoints
+                    IsSecret = p.IsSecret
                 };
                 if (p.Navigation != null)
                 {
@@ -250,6 +250,7 @@ namespace TsMap
             public List<TsSpawnPoint> SpawnPoints;
             public List<TsMapPoint> MapPoints;
             public List<TsTriggerPoint> TriggerPoints;
+            public List<TsPrefabLane> Lanes;
 
             public List<TsPrefabCurve> PrefabCurves;
             //< TsNodeId/TsNodeId, <List<TsPrefabCurveId>, float> >

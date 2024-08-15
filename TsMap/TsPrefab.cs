@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using TsMap.FileSystem;
 using TsMap.Helpers;
 using TsMap.Helpers.Logger;
@@ -73,6 +74,19 @@ namespace TsMap
         public List<int> prevLines;
     }
 
+    // Ordered lanes from TsPrefabCurves
+    public struct TsPrefabLane
+    {
+        public List<TsPrefabCurve> curves;
+        public float start_X;
+        public float start_Y;
+        public float start_Z;
+        public float end_X;
+        public float end_Y;
+        public float end_Z;
+        public float length;
+    }
+
     public class TsPrefab
     {
         private const int NodeBlockSize = 0x68;
@@ -97,6 +111,8 @@ namespace TsMap
 
         public List<TsPrefabCurve> PrefabCurves { get; private set; }
         public List<TsPrefabCurve> ActualCurves { get; private set; }
+        public List<TsPrefabLane> Lanes { get; private set; }
+        public List<List<double[]>> curvePoints { get; private set; }
         public Dictionary<Tuple<TsPrefabNode, TsPrefabNode>, Tuple<List<TsPrefabCurve>, float>> NavigationRoutes { get; private set; }
 
         public TsPrefab(string filePath, ulong token, string category)
@@ -404,10 +420,101 @@ namespace TsMap
                     Z = MemoryHelper.ReadSingle(_stream, triggerPointBaseOffset + 0x24),
                 };
                 TriggerPoints.Add(triggerPoint);
+                Logger.Instance.Info("Added trigger point");
             }
 
             _stream = null;
 
+            List<TsPrefabCurve> CurvesAdded = new List<TsPrefabCurve>();
+            // This will recursively traverse the prefab curves and add them to the lanes
+            // Basically it will spit out a list of:
+            // StartCurve -> Curve1 -> Curve2 -> ... -> EndCurve
+            List<List<TsPrefabCurve>> TraverseCurveTillEnd(TsPrefabCurve curve, List<TsPrefabCurve> curves, HashSet<int> visited = null)
+            {
+                if (visited == null)
+                {
+                    visited = new HashSet<int>();
+                }
+
+                List<List<TsPrefabCurve>> lanes = new List<List<TsPrefabCurve>>();
+
+                // Add the current curve's id to the visited set
+                visited.Add(curve.id);
+
+                if (curve.nextLines.Count == 0)
+                {
+                    lanes.Add(new List<TsPrefabCurve> { curve });
+                    CurvesAdded.Add(curve);
+                }
+                else
+                {
+                    for (int i = 0; i < curve.nextLines.Count; i++)
+                    {
+                        var nextCurve = curves[curve.nextLines[i]];
+
+                        // If the next curve has already been visited, skip it
+                        if (visited.Contains(nextCurve.id))
+                        {
+                            continue;
+                        }
+
+                        List<List<TsPrefabCurve>> nextLanes = TraverseCurveTillEnd(nextCurve, curves, new HashSet<int>(visited));
+                        foreach (var lane in nextLanes)
+                        {
+                            lane.Insert(0, curve);
+                            lanes.Add(lane);
+                            CurvesAdded.Add(curve);
+                        }
+                    }
+                }
+
+                return lanes;
+            }
+
+            List<List<TsPrefabCurve>> CurveList = new List<List<TsPrefabCurve>>();
+            // ^ This array is in the following format:
+            // List <
+            //  StartCurve -> Curve1 -> Curve2 -> ... -> EndCurve
+            // >
+
+            for (int i = 0; i < PrefabCurves.Count; i++)
+            {
+                var curve = PrefabCurves[i];
+
+                if (curve.prevLines.Count == 0 && curve.nextLines.Count > 0)
+                {
+                    List<List<TsPrefabCurve>> lanes = TraverseCurveTillEnd(curve, PrefabCurves);
+                    CurveList.AddRange(lanes);
+                }
+                else if (curve.prevLines.Count == 0 && curve.nextLines.Count == 0)
+                {
+                    // This means that the prefab only has a start and an end point.
+                    CurveList.Add(new List<TsPrefabCurve> { curve });
+                }
+            }
+
+            CurveList = CurveList
+                .GroupBy(lane => String.Join(",", lane.Select(curve => curve.id)))
+                .Select(group => group.First())
+                .ToList();
+
+            // Create the lanes from the curvelist
+            Lanes = new List<TsPrefabLane>();
+            foreach (var lane in CurveList)
+            {
+                TsPrefabLane newLane = new TsPrefabLane();
+                newLane.curves = lane;
+                newLane.start_X = lane[0].start_X;
+                newLane.start_Y = lane[0].start_Y;
+                newLane.start_Z = lane[0].start_Z;
+                newLane.end_X = lane[lane.Count - 1].end_X;
+                newLane.end_Y = lane[lane.Count - 1].end_Y;
+                newLane.end_Z = lane[lane.Count - 1].end_Z;
+                newLane.length = lane.Sum(curve => curve.lenght);
+                Lanes.Add(newLane);
+            }
+
+            if (Lanes.Count == 0) return;
         }
     }
 }

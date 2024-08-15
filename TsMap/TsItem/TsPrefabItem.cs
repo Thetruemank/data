@@ -22,10 +22,7 @@ namespace TsMap.TsItem
         public int Origin2 { get; private set; }
         public TsPrefab Prefab { get; private set; }
         private List<TsPrefabLook> _looks;
-
         public bool IsSecret { get; private set; }
-
-        public List<List<double[]>> curvePoints { get; private set; }
 
         public void AddLook(TsPrefabLook look)
         {
@@ -400,62 +397,6 @@ namespace TsMap.TsItem
                     Sector.Mapper.OverlayManager.AddOverlay("parking_ico", OverlayType.Map, newPoint.X, newPoint.Y,
                         "Parking", DlcGuard, IsSecret);
                 }
-            }
-
-            // Load the correct positions for the curves
-            curvePoints = new List<List<double[]>>();
-            for (int i = 0; i < Prefab.PrefabCurves.Count; i++)
-            {
-                var newPointStart = RenderHelper.RotatePoint(prefabStartX + Prefab.PrefabCurves[i].start_X, prefabStartZ + Prefab.PrefabCurves[i].start_Z, rot, originNode.X, originNode.Z);
-                var newPointEnd = RenderHelper.RotatePoint(prefabStartX + Prefab.PrefabCurves[i].end_X, prefabStartZ + Prefab.PrefabCurves[i].end_Z, rot, originNode.X, originNode.Z);
-
-                var currentCurvePoints = new List<double[]>();
-
-                float sx = newPointStart.X;
-                float sy = Prefab.PrefabCurves[i].start_Y;
-                float sz = newPointStart.Y;
-                float ex = newPointEnd.X;
-                float ey = Prefab.PrefabCurves[i].end_Y;
-                float ez = newPointEnd.Y;
-
-                float srx = Prefab.PrefabCurves[i].start_rot_X;
-                float srz = Prefab.PrefabCurves[i].start_rot_Z;
-                float erx = Prefab.PrefabCurves[i].end_rot_X;
-                float erz = Prefab.PrefabCurves[i].end_rot_Z;
-
-                var startRot = Math.PI - Math.Atan2(srz, srx);
-                startRot = startRot % (Math.PI * 2);
-                startRot = startRot - rot;
-                var endRot = Math.PI - Math.Atan2(erz, erx);
-                endRot = endRot % (Math.PI * 2);
-                endRot = endRot - rot;
-
-                var length = Math.Sqrt(Math.Pow(sx - ex, 2) + Math.Pow(sy - ey, 2) + Math.Pow(sz - ez, 2));
-                var radius = Math.Sqrt(Math.Pow(sx - ex, 2) + Math.Pow(sz - ez, 2));
-
-                var tanSx = Math.Cos(-(Math.PI * 0.5 - startRot)) * radius;
-                var tanEx = Math.Cos(-(Math.PI * 0.5 - endRot)) * radius;
-                var tanSz = Math.Sin(-(Math.PI * 0.5 - startRot)) * radius;
-                var tanEz = Math.Sin(-(Math.PI * 0.5 - endRot)) * radius;
-
-                var neededPoints = Math.Round(length * PREFAB_QUALITY);
-                if(neededPoints < MIN_QUALITY)
-                {
-                    neededPoints = MIN_QUALITY;
-                }
-
-                for (int j = 0; j < neededPoints; j++)
-                {
-                    float s = j / (float)(neededPoints - 1);
-                    double[] point = new double[3];
-                    point[0] = Hermite(s, sx, ex, tanSx, tanEx);
-                    point[2] = Hermite(s, sz, ez, tanSz, tanEz);
-                    point[1] = sy + (ey - sy) * s;
-                    currentCurvePoints.Add(point);
-                }
-
-
-                curvePoints.Add(currentCurvePoints);
             }
         }
     }
